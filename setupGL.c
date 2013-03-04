@@ -35,7 +35,7 @@ static void PrintString(void *font, const char *str) {
 	int len, i;
 
 	len = (int)strlen(str);
-	for (i = 0; i < len; i++)
+	for (i = 0; i < len; ++i)
 		glutBitmapCharacter(font, str[i]);
 }
 

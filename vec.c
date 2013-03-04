@@ -1,7 +1,5 @@
 
-#ifndef GPU_KERNEL
 #include <math.h>
-#endif
 
 #include "vec.h"
 
