@@ -1,6 +1,8 @@
 
 #include "utility.h"
 
+#define NULL 0
+
 double WallClockTime() 
 {
 #if defined(__linux__) || defined(__APPLE__)

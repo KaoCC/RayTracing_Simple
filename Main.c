@@ -15,7 +15,7 @@
 
 
 /* Options Flags*/
-static int useGPU = 1;
+static int useGPU = 0;
 static int forceWorkSize = 0;
 
 /* OpenCL Variables */
