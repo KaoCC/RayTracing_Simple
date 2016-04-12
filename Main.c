@@ -144,7 +144,7 @@ static void AllocateBuffers() {
 
 static char *ReadKernelSourcesFile(const char *fileName) {
 
-	FILE *file = fopen(fileName, "r");
+	FILE *file = fopen(fileName, "rb");
 	if (!file) {
 		fprintf(stderr, "Failed to open file '%s'\n", fileName);
 		exit(-1);
