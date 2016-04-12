@@ -15,18 +15,11 @@
 
 
 /* Options Flags*/
-static int useGPU = 0;
+static int useGPU = 1;
 static int forceWorkSize = 0;
 
 /* OpenCL Variables */
 static cl_context context;
-
-// Buffers
-//static cl_mem pixelBuffer;
-//static cl_mem colorBuffer;
-//static cl_mem cameraBuffer;
-//static cl_mem sphereBuffer;
-//static cl_mem seedBuffer;
 
 
 static cl_command_queue commandQueue;
@@ -44,12 +37,19 @@ static Vec* color;
 Camera* cameraPtr;
 static int currentSample = 0;
 Sphere *spheres;
+Sphere *spheres_host_ptr;
 unsigned int sphereCount;
 
 static void DefaultSceneSetup()
 {
-	spheres = DemoSpheres;
+	spheres_host_ptr = DemoSpheres;
 	sphereCount = sizeof(DemoSpheres) / sizeof(Sphere);
+
+	spheres = (Sphere *)clSVMAlloc(context, CL_MEM_SVM_FINE_GRAIN_BUFFER, sizeof(Sphere) * sphereCount, 0);
+
+	for (int i = 0; i < sphereCount; ++i) {
+		spheres[i] = spheres_host_ptr[i];
+	}
 
 	vinit(&cameraPtr->orig, 20.f, 100.f, 120.f);
 	vinit(&cameraPtr->target, 0.f, 25.f, 0.f);
@@ -80,10 +80,8 @@ static void AllocateBuffers() {
 
 	pixels = (unsigned int *)clSVMAlloc(context, CL_MEM_SVM_FINE_GRAIN_BUFFER, sizeof(unsigned int) * pixelCount, 0);
 
-
 	color = (Vec*)clSVMAlloc(context, CL_MEM_SVM_FINE_GRAIN_BUFFER, sizeof(Vec) * pixelCount, 0);
 
-	spheres = (Sphere *)clSVMAlloc(context, CL_MEM_SVM_FINE_GRAIN_BUFFER, sizeof(Sphere) * sphereCount, 0);
 
 }
 
@@ -389,6 +387,7 @@ static void SetUpOpenCL() {
 		exit(-1);
 	}
 
+
     /* Get the device list data */
 	size_t deviceListSize;
     status = clGetContextInfo(
@@ -486,11 +485,6 @@ static void SetUpOpenCL() {
 		exit(-1);
     }
 
-	/*------------------------------------------------------------------------*/
-
-	AllocateBuffers();
-
-	/*------------------------------------------------------------------------*/
 
 	/* Create the kernel program */
 	const char *sources = ReadKernelSourcesFile(kernelFileName);
@@ -506,7 +500,7 @@ static void SetUpOpenCL() {
     }
 
 
-	status = clBuildProgram(program, 1, devices, "-I. -w", NULL, NULL);
+	status = clBuildProgram(program, 0, 0, "-I. -w -cl-std=CL2.0", NULL, NULL);
 
 	if (status != CL_SUCCESS) {
 		fprintf(stderr, "Failed to build OpenCL kernel: %d\n", status);
@@ -568,6 +562,14 @@ static void SetUpOpenCL() {
 		fprintf(stderr, "OpenCL Device 0: forced kernel work group size = %d\n", forceWorkSize);
 		workGroupSize = forceWorkSize;
 	}
+
+
+
+	/*------------------------------------------------------------------------*/
+
+	AllocateBuffers();
+
+	/*------------------------------------------------------------------------*/
 }
 
 static void ExecuteKernel() {

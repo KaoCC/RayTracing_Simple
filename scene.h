@@ -4,7 +4,7 @@
 
 #include "sphere.h"
 
-static Sphere DemoSpheres[] = {
+Sphere DemoSpheres[] = {
 	{1000, {0, -1000, 0}, {0, 0, 0}, {0.75, 0.75, 0.75}, DIFF},
 	{12, {40, 20, 0}, {0, 0, 0}, {0.9, 0, 0}, REFR},
 	{11, {-35, 20, 0}, {0, 0, 0}, {0, 0.9, 0}, REFR},

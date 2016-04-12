@@ -21,6 +21,7 @@ extern void UpdateCamera();
 //extern Camera camera;
 extern Camera* cameraPtr;
 extern Sphere *spheres;
+extern Sphere* spheres_host_ptr;
 extern unsigned int sphereCount;
 
 
@@ -67,10 +68,15 @@ void ReadScene(char *fileName) {
 	fprintf(stderr, "Scene size: %d\n", sphereCount);
 
 	/* Read all spheres */
+
 	//spheres = (Sphere *)clSVMAlloc(context, CL_MEM_SVM_FINE_GRAIN_BUFFER,sizeof(Sphere) * sphereCount, 0);
+	spheres_host_ptr = malloc(sizeof(Sphere) * sphereCount);
+
+	// MAY HAVE BUG HERE !
+
 	unsigned int i;
 	for (i = 0; i < sphereCount; i++) {
-		Sphere *s = &spheres[i];
+		Sphere *s = &spheres_host_ptr[i];
 		int mat;
 		int c = fscanf(f,"sphere %f  %f %f %f  %f %f %f  %f %f %f  %d\n",
 				&s->rad,
