@@ -18,7 +18,8 @@ extern void ReInitScene();
 extern void UpdateRendering();
 extern void UpdateCamera();
 
-extern Camera camera;
+//extern Camera camera;
+extern Camera* cameraPtr;
 extern Sphere *spheres;
 extern unsigned int sphereCount;
 
@@ -50,8 +51,8 @@ void ReadScene(char *fileName) {
 
 	/* Read the camera position */
 	int c = fscanf(f,"camera %f %f %f  %f %f %f\n",
-			&camera.orig.x, &camera.orig.y, &camera.orig.z,
-			&camera.target.x, &camera.target.y, &camera.target.z);
+			&cameraPtr->orig.x, &cameraPtr->orig.y, &cameraPtr->orig.z,
+			&cameraPtr->target.x, &cameraPtr->target.y, &cameraPtr->target.z);
 	if (c != 6) {
 		fprintf(stderr, "Failed to read 6 camera parameters: %d\n", c);
 		exit(-1);
@@ -66,7 +67,7 @@ void ReadScene(char *fileName) {
 	fprintf(stderr, "Scene size: %d\n", sphereCount);
 
 	/* Read all spheres */
-	spheres = (Sphere *)malloc(sizeof(Sphere) * sphereCount);
+	//spheres = (Sphere *)clSVMAlloc(context, CL_MEM_SVM_FINE_GRAIN_BUFFER,sizeof(Sphere) * sphereCount, 0);
 	unsigned int i;
 	for (i = 0; i < sphereCount; i++) {
 		Sphere *s = &spheres[i];
@@ -102,18 +103,18 @@ void ReadScene(char *fileName) {
 }
 
 void UpdateCamera() {
-	vsub(&camera.dir, &camera.target, &camera.orig);
-	vnorm(&camera.dir);
+	vsub(&cameraPtr->dir, &cameraPtr->target, &cameraPtr->orig);
+	vnorm(&cameraPtr->dir);
 
 	const Vec up = {0.f, 1.f, 0.f};
 	const float fov = (M_PI / 180.f) * 45.f;
-	vxcross(&camera.x, &camera.dir, &up);
-	vnorm(&camera.x);
-	vsmul(&camera.x, width * fov / height, &camera.x);
+	vxcross(&cameraPtr->x, &cameraPtr->dir, &up);
+	vnorm(&cameraPtr->x);
+	vsmul(&cameraPtr->x, width * fov / height, &cameraPtr->x);
 
-	vxcross(&camera.y, &camera.x, &camera.dir);
-	vnorm(&camera.y);
-	vsmul(&camera.y, fov, &camera.y);
+	vxcross(&cameraPtr->y, &cameraPtr->x, &cameraPtr->dir);
+	vnorm(&cameraPtr->y);
+	vsmul(&cameraPtr->y, fov, &cameraPtr->y);
 }
 
 void idleFunc(void) {
