@@ -606,7 +606,7 @@ void UpdateRendering() {
 
 	//--------------------------------------------------------------------------
 
-	if (currentSample < 20) {
+	if (currentSample < 200) {
 		ExecuteKernel();
 		currentSample++;
 	} else {
