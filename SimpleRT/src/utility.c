@@ -1,7 +1,7 @@
 
 #include "utility.h"
 
-#define NULL 0
+//#define NULL 0
 
 double WallClockTime() 
 {
