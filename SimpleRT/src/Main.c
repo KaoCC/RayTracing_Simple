@@ -15,7 +15,7 @@
 
 
 /* Options Flags*/
-static int useGPU = 1;
+static int useGPU = 0;
 static int forceWorkSize = 0;
 
 /* OpenCL Variables */
@@ -368,7 +368,7 @@ static void SetUpOpenCL() {
 
 	// Create the context
 
-	cl_context_properties cps[3] = {
+	cl_context_properties cps[] = {
 		CL_CONTEXT_PLATFORM,
 		(cl_context_properties) platform,
 		0
@@ -556,10 +556,10 @@ static void SetUpOpenCL() {
 	}
 
 	workGroupSize = (unsigned int) gsize;
-	fprintf(stderr, "OpenCL Device 0: kernel work group size = %d\n", workGroupSize);
+	fprintf(stderr, "Kernel work group size = %d\n", workGroupSize);
 
 	if (forceWorkSize > 0) {
-		fprintf(stderr, "OpenCL Device 0: forced kernel work group size = %d\n", forceWorkSize);
+		fprintf(stderr, "Forced kernel work group size = %d\n", forceWorkSize);
 		workGroupSize = forceWorkSize;
 	}
 
@@ -606,23 +606,27 @@ void UpdateRendering() {
 
 	//--------------------------------------------------------------------------
 
-	if (currentSample < 200) {
-		ExecuteKernel();
-		currentSample++;
-	} else {
-		/* After first 20 samples, continue to execute kernels for more and more time */
-		const float k = min(currentSample - 20, 100) / 100.f;
-		const float tresholdTime = 0.5f * k;
-		while (1) {
-			ExecuteKernel();
-			clFinish(commandQueue);
-			currentSample++;
+	//if (1 /*currentSample < 200*/) {
 
-			const float elapsedTime = WallClockTime() - startTime;
-			if (elapsedTime > tresholdTime)
-				break;
-		}
-	}
+	ExecuteKernel();
+	clFinish(commandQueue);
+	currentSample++;
+
+	//	printf("done: %d\n", currentSample);
+	//} else {
+	//	/* After first 20 samples, continue to execute kernels for more and more time */
+	//	const float k = min(currentSample - 20, 100) / 100.f;
+	//	const float tresholdTime = 0.5f * k;
+	//	while (1) {
+	//		ExecuteKernel();
+	//		clFinish(commandQueue);
+	//		currentSample++;
+
+	//		const float elapsedTime = WallClockTime() - startTime;
+	//		if (elapsedTime > tresholdTime)
+	//			break;
+	//	}
+	//}
 
 	//--------------------------------------------------------------------------
 
@@ -687,6 +691,8 @@ int main(int argc, char *argv[]) {
 	}
 
 	UpdateCamera();
+
+
 
 	InitGlut(argc, argv, "OpenCL Ray Tracing Experiment");
 	
