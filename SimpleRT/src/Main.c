@@ -40,6 +40,10 @@ Sphere *spheres;
 Sphere *spheres_host_ptr;
 unsigned int sphereCount;
 
+
+// selection parameters
+static const int kPlatformID = 0;
+
 static void DefaultSceneSetup()
 {
 	spheres_host_ptr = DemoSpheres;
@@ -47,7 +51,7 @@ static void DefaultSceneSetup()
 
 	spheres = (Sphere *)clSVMAlloc(context, CL_MEM_SVM_FINE_GRAIN_BUFFER, sizeof(Sphere) * sphereCount, 0);
 
-	for (int i = 0; i < sphereCount; ++i) {
+	for (unsigned i = 0; i < sphereCount; ++i) {
 		spheres[i] = spheres_host_ptr[i];
 	}
 
@@ -67,12 +71,10 @@ static void FreeBuffers() {
 
 static void AllocateBuffers() {
 	const int pixelCount = width * height;
-	int i;
-
 	cameraPtr = (Camera*)clSVMAlloc(context, CL_MEM_SVM_FINE_GRAIN_BUFFER, sizeof(Camera), 0);
 
 	seeds = (unsigned int *)clSVMAlloc(context, CL_MEM_SVM_FINE_GRAIN_BUFFER, sizeof(unsigned int) * pixelCount * 2, 0);
-	for (i = 0; i < pixelCount * 2; i++) {
+	for (int i = 0; i < pixelCount * 2; ++i) {
 		seeds[i] = rand();
 		if (seeds[i] < 2)
 			seeds[i] = 2;
@@ -113,7 +115,7 @@ static char *ReadKernelSourcesFile(const char *fileName) {
 	}
 
 	fprintf(stderr, "Reading file '%s' (size %ld bytes)\n", fileName, size);
-	size_t res = fread(src, 1, sizeof(char) * size, file);
+	size_t res = fread(src, sizeof(char), sizeof(char) * size, file);
 	if (res != sizeof(char) * size) {
 		fprintf(stderr, "Failed to read file '%s' (read %ld)\n", fileName, res);
 		exit(-1);
@@ -244,11 +246,11 @@ static void SetUpOpenCL() {
 			exit(-1);
 		}
 
-		unsigned int i;
-		for (i = 0; i < numPlatforms; ++i) {
+		
+		for (unsigned i = 0; i < numPlatforms; ++i) {
 			char pbuf[100];
 			status = clGetPlatformInfo(platforms[i],
-					CL_PLATFORM_VENDOR,
+				CL_PLATFORM_NAME,
 					sizeof(pbuf),
 					pbuf,
 					NULL);
@@ -262,7 +264,8 @@ static void SetUpOpenCL() {
 			fprintf(stderr, "OpenCL Platform %d: %s\n", i, pbuf);
 		}
 
-		platform = platforms[0];
+		platform = platforms[kPlatformID];
+		fprintf(stderr, "[Selected] OpenCL Platform %d\n", kPlatformID);
 		free(platforms);
 	}
 
@@ -277,8 +280,8 @@ static void SetUpOpenCL() {
 
 	int deviceFound = 0;
 	cl_device_id selectedDevice;
-	unsigned int i;
-	for (i = 0; i < deviceCount; ++i) {
+
+	for (unsigned i = 0; i < deviceCount; ++i) {
 		cl_device_type type = 0;
 		status = clGetDeviceInfo(devices[i],
 				CL_DEVICE_TYPE,
@@ -402,7 +405,7 @@ static void SetUpOpenCL() {
     }
 
 	/* Print devices list */
-	for (i = 0; i < deviceListSize / sizeof(cl_device_id); ++i) {
+	for (unsigned i = 0; i < deviceListSize / sizeof(cl_device_id); ++i) {
 		cl_device_type type = 0;
 		status = clGetDeviceInfo(devices[i],
 				CL_DEVICE_TYPE,
@@ -477,7 +480,7 @@ static void SetUpOpenCL() {
 	cl_command_queue_properties prop = 0;
 	commandQueue = clCreateCommandQueue(
 			context,
-			devices[0],
+			selectedDevice,
 			prop,
 			&status);
 	if (status != CL_SUCCESS) {
@@ -508,7 +511,7 @@ static void SetUpOpenCL() {
         size_t retValSize;
 		status = clGetProgramBuildInfo(
 				program,
-				devices[0],
+			selectedDevice,
 				CL_PROGRAM_BUILD_LOG,
 				0,
 				NULL,
@@ -521,7 +524,7 @@ static void SetUpOpenCL() {
         char *buildLog = (char *)malloc(retValSize + 1);
         status = clGetProgramBuildInfo(
 				program,
-				devices[0],
+			selectedDevice,
 				CL_PROGRAM_BUILD_LOG,
 				retValSize,
 				buildLog,
@@ -542,10 +545,10 @@ static void SetUpOpenCL() {
 		exit(-1);
     }
 
-	// LordCRC's patch for better workGroupSize
+	// for better workGroupSize
 	size_t gsize = 0;
 	status = clGetKernelWorkGroupInfo(kernel,
-			devices[0],
+		selectedDevice,
 			CL_KERNEL_WORK_GROUP_SIZE,
 			sizeof(size_t),
 			&gsize,
@@ -698,6 +701,9 @@ int main(int argc, char *argv[]) {
 	
 
     glutMainLoop();
+
+
+	FreeBuffers();
 
 	return 0;
 }
