@@ -1,18 +1,22 @@
-RayTracing_Simple
-=================
+# RayTracing_Simple
 
-Reference:
-1. Realistic Ray Tracing, Second Edition
-http://www.amazon.com/Realistic-Ray-Tracing-Peter-Shirley/dp/1568814615
+This is a implementation of the Ray-Tracing algorithm using OpenCL for demonstration purpose.
+The code has been kept as simple as possible with minimum dependencies to 3rd party libraries.
 
-2. Ray Tracing from the Ground Up
-http://www.amazon.com/Ray-Tracing-Ground-Kevin-Suffern/dp/1568812728/ref=pd_bxgy_b_img_z/179-1392847-3060704
+## System requirements and Dependencies
 
-3. An Introduction to Ray Tracing (The Morgan Kaufmann Series in Computer Graphics)
-http://www.amazon.com/Introduction-Tracing-Kaufmann-Computer-Graphics/dp/0122861604/ref=pd_bxgy_b_img_y/179-1392847-3060704
+- [OpenCL SDK](https://software.intel.com/en-us/intel-opencl)
+- [freeglut](http://freeglut.sourceforge.net/)
 
-==========
+## Build
 
-Please install AMD APP SDK for development
+### Windows & Mac OS X & Linux
 
-http://developer.amd.com/tools/heterogeneous-computing/amd-accelerated-parallel-processing-app-sdk/
+We have recently changed from premake to [cmake](https://cmake.org/).
+Belows are instructions of usnig a GCC-based compiler as an example.
+
+1. Create your build directory `mkdir RT_build`
+2. Run CMake `cmake ..` or `cmake -DCMAKE_BUILD_TYPE=Debug` for debugging
+3. Compile by running `make`
+4. The binary is named Radiance.
+
