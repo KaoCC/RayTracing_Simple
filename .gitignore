@@ -31,3 +31,5 @@
 !Tool/premake/win/*
 
 !3rdparty/**
+
+.vscode/
