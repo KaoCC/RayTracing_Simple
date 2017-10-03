@@ -3,7 +3,7 @@
 #ifndef _RAY_H_
 #define	_RAY_H_
 
-#include "vec.h"
+#include "Vec.hpp"
 
 typedef struct {
 	Vec o, d;

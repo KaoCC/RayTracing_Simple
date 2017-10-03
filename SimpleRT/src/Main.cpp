@@ -1,17 +1,18 @@
 
 
-#include <stdio.h>
-#include <stdlib.h>
-#include <time.h>
-#include <string.h>
+#include <cstdio>
+#include <cstdlib>
+#include <ctime>
+#include <cstring>
 
 
 #include <CL/cl.h>
 
-#include "camera.h"
-#include "scene.h"
-#include "setupGL.h"
-#include "utility.h"
+#include "Camera.hpp"
+#include "Scene.hpp"
+#include "SetupGL.hpp"
+#include "Utility.hpp"
+#include "Sphere.hpp"
 
 
 /* Options Flags*/
@@ -55,8 +56,11 @@ static void DefaultSceneSetup()
 		spheres[i] = spheres_host_ptr[i];
 	}
 
-	vinit(&cameraPtr->orig, 20.f, 100.f, 120.f);
-	vinit(&cameraPtr->target, 0.f, 25.f, 0.f);
+	//vinit(&cameraPtr->orig, 20.f, 100.f, 120.f);
+	cameraPtr->orig = { 20.f, 100.f, 120.f };
+
+	//vinit(&cameraPtr->target, 0.f, 25.f, 0.f);
+	cameraPtr->target = { 0.f, 25.f, 0.f };
 }
 
 static void FreeBuffers() {
@@ -123,6 +127,8 @@ static char *ReadKernelSourcesFile(const char *fileName) {
 	src[size] = '\0'; /* NULL terminated */
 
 	fclose(file);
+
+#pragma message ( "The allocated src is not freed ! (ReadKernelSourcesFile)" )
 
 	return src;
 
@@ -221,12 +227,7 @@ static void SetUpKernelArguments()
 }
 
 static void SetUpOpenCL() {
-	cl_device_type dType;
-
-	if (useGPU)
-		dType = CL_DEVICE_TYPE_GPU;
-	else
-		dType = CL_DEVICE_TYPE_CPU;
+	cl_device_type dType = useGPU ? CL_DEVICE_TYPE_GPU : CL_DEVICE_TYPE_CPU;
 
 	// Select the platform
 
@@ -613,7 +614,7 @@ void UpdateRendering() {
 
 	ExecuteKernel();
 	clFinish(commandQueue);
-	currentSample++;
+	++currentSample;
 
 	//	printf("done: %d\n", currentSample);
 	//} else {
