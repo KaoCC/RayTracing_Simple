@@ -73,9 +73,9 @@ void ReadScene(char *fileName) {
 	spheres_host_ptr = malloc(sizeof(Sphere) * sphereCount);
 
 	// MAY HAVE BUG HERE !
+#pragma message ( "MAY HAVE BUG HERE ! (ReadScene)" )
 
-	unsigned int i;
-	for (i = 0; i < sphereCount; i++) {
+	for (unsigned int i = 0; i < sphereCount; i++) {
 		Sphere *s = &spheres_host_ptr[i];
 		int mat;
 		int c = fscanf(f,"sphere %f  %f %f %f  %f %f %f  %f %f %f  %d\n",
