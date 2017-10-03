@@ -33,8 +33,6 @@ target_link_libraries(SimpleRT ${GLUT_LIBRARIES} ${GLUT_glut_LIBRARY} ${OpenCL_L
 add_custom_command(TARGET SimpleRT POST_BUILD COMMAND ${CMAKE_COMMAND} -E copy_directory ${RT_DIR}/kernel
 $<TARGET_FILE_DIR:SimpleRT>/)
 
-add_custom_command(TARGET SimpleRT POST_BUILD COMMAND ${CMAKE_COMMAND} -E copy_directory ${RT_DIR}/include
-$<TARGET_FILE_DIR:SimpleRT>/)
 
 if (WIN32)
     #set(WK_DIR "$<TARGET_FILE_DIR:Radiance>")
