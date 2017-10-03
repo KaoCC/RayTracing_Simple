@@ -34,10 +34,9 @@ static int currentSphere;
 
 
 static void PrintString(void *font, const char *str) {
-	int len, i;
 
-	len = (int)strlen(str);
-	for (i = 0; i < len; ++i)
+	size_t len = (int)strlen(str);
+	for (size_t i = 0; i < len; ++i)
 		glutBitmapCharacter(font, str[i]);
 }
 
@@ -117,7 +116,7 @@ void UpdateCamera() {
 	cameraPtr->dir.norm();
 
 	const Vec up {0.f, 1.f, 0.f};
-	const float fov = (M_PI / 180.f) * 45.f;
+	const float fov = static_cast<float>((M_PI / 180.f) * 45.f);
 	//vxcross(&cameraPtr->x, &cameraPtr->dir, &up);
 	cameraPtr->x = cameraPtr->dir.cross(up);
 
