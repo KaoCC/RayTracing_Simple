@@ -1,17 +1,17 @@
 
 
-#include <stdio.h>
-#include <stdlib.h>
-#include <string.h>
+#include <cstdio>
+#include <cstdlib>
+#include <cstring>
 
 #ifdef _WIN32
 #define _USE_MATH_DEFINES
 #endif
-#include <math.h>
+#include <cmath>
 
-#include "camera.h"
-#include "sphere.h"
-#include "setupGL.h"
+#include "Camera.hpp"
+#include "Sphere.hpp"
+#include "SetupGL.hpp"
 
 extern void ReInit(const int);
 extern void ReInitScene();
@@ -70,7 +70,7 @@ void ReadScene(char *fileName) {
 	/* Read all spheres */
 
 	//spheres = (Sphere *)clSVMAlloc(context, CL_MEM_SVM_FINE_GRAIN_BUFFER,sizeof(Sphere) * sphereCount, 0);
-	spheres_host_ptr = malloc(sizeof(Sphere) * sphereCount);
+	spheres_host_ptr = static_cast<Sphere*>(malloc(sizeof(Sphere) * sphereCount));
 
 	// MAY HAVE BUG HERE !
 #pragma message ( "MAY HAVE BUG HERE ! (ReadScene)" )
@@ -86,13 +86,13 @@ void ReadScene(char *fileName) {
 				&mat);
 		switch (mat) {
 			case 0:
-				s->refl = DIFF;
+				s->refl = Refl::DIFF;
 				break;
 			case 1:
-				s->refl = SPEC;
+				s->refl = Refl::SPEC;
 				break;
 			case 2:
-				s->refl = REFR;
+				s->refl = Refl::REFR;
 				break;
 			default:
 				fprintf(stderr, "Failed to read material type for sphere #%d: %d\n", i, mat);
@@ -109,18 +109,32 @@ void ReadScene(char *fileName) {
 }
 
 void UpdateCamera() {
-	vsub(&cameraPtr->dir, &cameraPtr->target, &cameraPtr->orig);
-	vnorm(&cameraPtr->dir);
 
-	const Vec up = {0.f, 1.f, 0.f};
+	//vsub(&cameraPtr->dir, &cameraPtr->target, &cameraPtr->orig);
+	cameraPtr->dir = cameraPtr->target - cameraPtr->orig;
+
+	//vnorm(&cameraPtr->dir);
+	cameraPtr->dir.norm();
+
+	const Vec up {0.f, 1.f, 0.f};
 	const float fov = (M_PI / 180.f) * 45.f;
-	vxcross(&cameraPtr->x, &cameraPtr->dir, &up);
-	vnorm(&cameraPtr->x);
-	vsmul(&cameraPtr->x, width * fov / height, &cameraPtr->x);
+	//vxcross(&cameraPtr->x, &cameraPtr->dir, &up);
+	cameraPtr->x = cameraPtr->dir.cross(up);
 
-	vxcross(&cameraPtr->y, &cameraPtr->x, &cameraPtr->dir);
-	vnorm(&cameraPtr->y);
-	vsmul(&cameraPtr->y, fov, &cameraPtr->y);
+	//vnorm(&cameraPtr->x);
+	cameraPtr->x.norm();
+
+	//vsmul(&cameraPtr->x, width * fov / height, &cameraPtr->x);
+	cameraPtr->x = cameraPtr->x * (width * fov / height);
+
+	//vxcross(&cameraPtr->y, &cameraPtr->x, &cameraPtr->dir);
+	cameraPtr->y = cameraPtr->x.cross(cameraPtr->dir);
+
+	//vnorm(&cameraPtr->y);
+	cameraPtr->y.norm();
+
+	//vsmul(&cameraPtr->y, fov, &cameraPtr->y);
+	cameraPtr->y = cameraPtr->y * fov;
 }
 
 void idleFunc(void) {

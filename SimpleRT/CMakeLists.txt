@@ -11,18 +11,18 @@ include_directories(${OpenCL_INCLUDE_DIRS})
 add_executable(
     SimpleRT
 
-    ./include/camera.h
-    ./include/ray.h
-    ./include/scene.h
-    ./include/setupGL.h
-    ./include/sphere.h
-    ./include/utility.h
-    ./include/vec.h
+    ./include/Camera.hpp
+    ./include/Ray.hpp
+    ./include/Scene.hpp
+    ./include/SetupGL.hpp
+    ./include/Sphere.hpp
+    ./include/Utility.hpp
+    ./include/Vec.hpp
 
-    ./src/Main.c
-    ./src/setupGL.c
-    ./src/utility.c
-    ./src/vec.c
+    ./src/Main.cpp
+    ./src/SetupGL.cpp
+    ./src/Utility.cpp
+    ./src/Vec.cpp
 )
 
 
