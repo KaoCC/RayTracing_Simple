@@ -128,6 +128,8 @@ static char *ReadKernelSourcesFile(const char *fileName) {
 
 	fclose(file);
 
+#pragma message ( "The allocated src is not freed ! (ReadKernelSourcesFile)" )
+
 	return src;
 
 }
