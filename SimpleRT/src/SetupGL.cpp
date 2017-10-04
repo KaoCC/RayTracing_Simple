@@ -1,13 +1,11 @@
-
-
-#include <cstdio>
-#include <cstdlib>
-#include <cstring>
-
 #ifdef _WIN32
 #define _USE_MATH_DEFINES
 #endif
 #include <cmath>
+
+#include <cstdio>
+#include <cstdlib>
+#include <cstring>
 
 #include "Camera.hpp"
 #include "Sphere.hpp"
