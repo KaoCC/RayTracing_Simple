@@ -3,8 +3,10 @@
 #include <cstdio>
 #include <cstdlib>
 #include <ctime>
-#include <cstring>
+//#include <cstring>
 
+#include <string>
+#include <vector>
 
 #ifdef __APPLE__
 #include <OpenCL/OpenCL.h>
@@ -95,44 +97,45 @@ static void AllocateBuffers() {
 
 }
 
-static char *ReadKernelSourcesFile(const char *fileName) {
+static std::vector<char> ReadKernelSourcesFile(const std::string& fileName) {
 
-	FILE *file = fopen(fileName, "rb");
+	FILE *file = fopen(fileName.c_str(), "rb");
 	if (!file) {
-		fprintf(stderr, "Failed to open file '%s'\n", fileName);
+		fprintf(stderr, "Failed to open file '%s'\n", fileName.c_str());
 		exit(-1);
 	}
 
 	if (fseek(file, 0, SEEK_END)) {
-		fprintf(stderr, "Failed to seek file '%s'\n", fileName);
+		fprintf(stderr, "Failed to seek file '%s'\n", fileName.c_str());
 		exit(-1);
 	}
 
 	long size = ftell(file);
 	if (size == 0) {
-		fprintf(stderr, "Failed to check position on file '%s'\n", fileName);
+		fprintf(stderr, "Failed to check position on file '%s'\n", fileName.c_str());
 		exit(-1);
 	}
 
 	rewind(file);
 
-	char *src = (char *)malloc(sizeof(char) * size + 1);
-	if (!src) {
-		fprintf(stderr, "Failed to allocate memory for file '%s'\n", fileName);
-		exit(-1);
-	}
+	//char *src = (char *)malloc(sizeof(char) * size + 1);
+	//if (!src) {
+	//	fprintf(stderr, "Failed to allocate memory for file '%s'\n", fileName.c_str());
+	//	exit(-1);
+	//}
 
-	fprintf(stderr, "Reading file '%s' (size %ld bytes)\n", fileName, size);
-	size_t res = fread(src, sizeof(char), sizeof(char) * size, file);
+	std::vector<char> src(size + 1);
+
+	fprintf(stderr, "Reading file '%s' (size %ld bytes)\n", fileName.c_str(), size);
+	size_t res = fread(src.data(), sizeof(char), sizeof(char) * size, file);
 	if (res != sizeof(char) * size) {
-		fprintf(stderr, "Failed to read file '%s' (read %ld)\n", fileName, res);
+		fprintf(stderr, "Failed to read file '%s' (read %ld)\n", fileName.c_str(), res);
 		exit(-1);
 	}
 	src[size] = '\0'; /* NULL terminated */
 
 	fclose(file);
 
-#pragma message ( "The allocated src is not freed ! (ReadKernelSourcesFile)" )
 
 	return src;
 
@@ -271,6 +274,9 @@ static void SetUpOpenCL() {
 
 		platform = platforms[kPlatformID];
 		fprintf(stderr, "[Selected] OpenCL Platform %d\n", kPlatformID);
+
+
+
 		free(platforms);
 	}
 
@@ -495,7 +501,8 @@ static void SetUpOpenCL() {
 
 
 	/* Create the kernel program */
-	const char *sources = ReadKernelSourcesFile(kernelFileName);
+	const std::vector<char>& buffer = ReadKernelSourcesFile(kernelFileName);
+	const char *sources = buffer.data();
 	program = clCreateProgramWithSource(
         context,
         1,
