@@ -14,6 +14,27 @@ set(3RDPARTY_DIR ${CMAKE_SOURCE_DIR}/3rdparty)
 
 set(RT_DIR ${CMAKE_SOURCE_DIR}/SimpleRT)
 
+
+# for Cm Runtime and Compiler
+set(CM_DIR C:/Intel/MDF)
+set(CM_RUNTIME_DIR ${CM_DIR}/runtime)
+set(CM_COMPILER_DIR ${CM_DIR}/compiler)
+
+
+# add ARCH check
+if(NOT "${CMAKE_GENERATOR}" MATCHES "(Win64|IA64)")
+    set(PATH_MODIFIER "x86")
+    set(POSTFIX_MODIFIER "")
+    set(FILENAME_MODIFIER "32")
+elseif("${CMAKE_GENERATOR}" MATCHES "(Win64|IA64)")
+    set(PATH_MODIFIER "x64")
+    set(POSTFIX_MODIFIER "_x64")
+    set(FILENAME_MODIFIER "64")
+else()
+    message(FATAL_ERROR "${CMAKE_GENERATOR} missing! Can't continue")
+endif()
+
+
 project(SimpleRT)
 
 

@@ -7,6 +7,11 @@ include_directories(${RT_DIR}/include)
 include_directories(${GLUT_INCLUDE_DIR})
 include_directories(${OpenCL_INCLUDE_DIRS})
 
+# Cm related
+include_directories(${CM_RUNTIME_DIR}/include)
+include_directories(${CM_COMPILER_DIR}/include)
+
+link_directories(${CM_RUNTIME_DIR}/lib/${PATH_MODIFIER} ${CM_COMPILER_DIR}/lib/${PATH_MODIFIER})
 
 add_executable(
     SimpleRT
@@ -26,7 +31,15 @@ add_executable(
 )
 
 
+
+
 target_link_libraries(SimpleRT ${GLUT_LIBRARIES} ${GLUT_glut_LIBRARY} ${OpenCL_LIBRARIES})
+
+
+# Cm 
+set(CMRT_LIB "igfx${DX_MOD}cmrt${FILENAME_MODIFIER}")
+list (APPEND CMRT_LIB "libcm" )
+target_link_libraries(SimpleRT ${CMRT_LIB})
 
 # load the kernel automatically
 
