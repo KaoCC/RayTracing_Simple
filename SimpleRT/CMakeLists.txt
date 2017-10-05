@@ -8,8 +8,8 @@ include_directories(${GLUT_INCLUDE_DIR})
 include_directories(${OpenCL_INCLUDE_DIRS})
 
 # Cm related
-include_directories(${CM_RUNTIME_DIR}/include)
-include_directories(${CM_COMPILER_DIR}/include)
+include_directories(${CM_RUNTIME_INC})
+include_directories(${CM_COMPILER_INC})
 
 link_directories(${CM_RUNTIME_DIR}/lib/${PATH_MODIFIER} ${CM_COMPILER_DIR}/lib/${PATH_MODIFIER})
 
@@ -46,6 +46,14 @@ target_link_libraries(SimpleRT ${CMRT_LIB})
 add_custom_command(TARGET SimpleRT POST_BUILD COMMAND ${CMAKE_COMMAND} -E copy_directory ${RT_DIR}/kernel
 $<TARGET_FILE_DIR:SimpleRT>/)
 
+
+add_custom_command(
+    TARGET SimpleRT PRE_BUILD
+    COMMAND ${GENX_CC} ARGS -c -Qxcm -mCM_emit_common_isa ${RT_DIR}/kernel/RayTracing_Cm.cpp
+    WORKING_DIRECTORY ${CMAKE_BINARY_DIR}/bin/${CMAKE_CFG_INTDIR}
+    COMMENT "Compiling genx CM kernel definitions source file ${RT_DIR}/kernel/RayTracing_Cm.cpp"
+    #VERBATIM
+   )
 
 if (WIN32)
     #set(WK_DIR "$<TARGET_FILE_DIR:Radiance>")

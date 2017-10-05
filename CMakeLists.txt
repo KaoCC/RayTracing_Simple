@@ -20,6 +20,19 @@ set(CM_DIR C:/Intel/MDF)
 set(CM_RUNTIME_DIR ${CM_DIR}/runtime)
 set(CM_COMPILER_DIR ${CM_DIR}/compiler)
 
+set(CM_RUNTIME_INC ${CM_RUNTIME_DIR}/include)
+set(CM_COMPILER_INC ${CM_COMPILER_DIR}/include)
+
+# add default settings and configurations for Cm compilers and env
+
+set(EXTRA_INC -I ${CM_COMPILER_INC} -I ${CM_RUNTIME_INC})
+set(INSTALLDIR ${CM_DIR})
+set(ICLDIR ${INSTALLDIR}/compiler)
+set(GENX_CC ${ICLDIR}/bin/cmc)
+
+set(GENX_PATH -mCM_genx_assembler=${ICLDIR}/bin/GenX_IR)
+
+
 
 # add ARCH check
 if(NOT "${CMAKE_GENERATOR}" MATCHES "(Win64|IA64)")
@@ -35,7 +48,11 @@ else()
 endif()
 
 
+message("GENX_CC is ${GENX_CC}")
+
+
 project(SimpleRT)
+
 
 
 set(CMAKE_FIND_PACKAGE_SORT_ORDER NATURAL)
