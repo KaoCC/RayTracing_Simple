@@ -21,6 +21,18 @@
 #include "Sphere.hpp"
 
 
+
+// Cm Related
+
+#include "cm_rt.h"
+
+#ifdef CMRT_EMU
+
+// function prototype
+
+#endif
+
+
 /* Options Flags*/
 static int useGPU = 0;
 static int forceWorkSize = 0;
@@ -34,6 +46,14 @@ static cl_program program;
 static cl_kernel kernel;
 static unsigned int workGroupSize = 1;
 static std::string kernelFileName = "RayTracing_Kernel.cl";
+
+
+
+// Cm stuff
+static CmDevice* pCmDev;
+
+static const std::string isaFileName = "RayTracing_Cm.isa";
+
 
 
 static unsigned int *seeds;
@@ -587,6 +607,56 @@ static void SetUpOpenCL() {
 	/*------------------------------------------------------------------------*/
 }
 
+
+static void SetupCM() {
+
+	int result;
+
+	pCmDev = nullptr;
+	UINT version = 0;
+
+	result = CreateCmDevice(pCmDev, version);
+	if (result != CM_SUCCESS) {
+		printf("CmDevice creation error");
+		exit(EXIT_FAILURE);
+	}
+
+	if (version < CM_1_0) {
+		printf(" The runtime API version is later than runtime DLL version");
+		exit(EXIT_FAILURE);
+	}
+
+	FILE* pISA = fopen(isaFileName.c_str(), "rb");
+	if (pISA == NULL) {
+		perror("isa file");
+		exit(EXIT_FAILURE);
+	}
+
+	std::vector<char> pCommonISABuffer = ReadKernelSourcesFile(isaFileName);
+
+	CmProgram* cmProgram = nullptr;
+	result = pCmDev->LoadProgram(reinterpret_cast<void*>(pCommonISABuffer.data()), pCommonISABuffer.size(), cmProgram);		// check the size if error !
+	if (result != CM_SUCCESS) {
+		perror("CM LoadProgram error");
+		exit(EXIT_FAILURE);
+	}
+
+
+	// Create Kernel
+	CmKernel* cmKernel = nullptr;
+	result = pCmDev->CreateKernel(cmProgram, CM_KERNEL_FUNCTION(RayTracing), cmKernel);
+	if (result != CM_SUCCESS) {
+		perror ("LoadProgram error");
+		exit(EXIT_FAILURE);
+	}
+
+
+
+}
+
+
+
+
 static void ExecuteOpenCLKernel() {
 
 	/* Enqueue a kernel run command */
@@ -686,6 +756,9 @@ int main(int argc, char *argv[]) {
 	fprintf(stderr, "Usage: %s <use CPU/GPU (0/1)> <width> <height>\n", argv[0]);
 
 	SetUpOpenCL();
+
+	// tmp
+	SetupCM();
 
 	if (argc == 1) {
 		DefaultSceneSetup();
