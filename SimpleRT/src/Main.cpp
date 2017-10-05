@@ -33,7 +33,7 @@ static cl_command_queue commandQueue;
 static cl_program program;
 static cl_kernel kernel;
 static unsigned int workGroupSize = 1;
-static char *kernelFileName = "RayTracing_Kernel.cl";
+static std::string kernelFileName = "RayTracing_Kernel.cl";
 
 
 static unsigned int *seeds;
@@ -69,7 +69,7 @@ static void DefaultSceneSetup()
 	cameraPtr->target = { 0.f, 25.f, 0.f };
 }
 
-static void FreeBuffers() {
+static void FreeOpenCLBuffers() {
 
 	// openCL Buffer: color, pixel, seed
 
@@ -79,13 +79,13 @@ static void FreeBuffers() {
 	clSVMFree(context, spheres);
 }
 
-static void AllocateBuffers() {
+static void AllocateOpenCLBuffers() {
 	const int pixelCount = width * height;
 	cameraPtr = (Camera*)clSVMAlloc(context, CL_MEM_SVM_FINE_GRAIN_BUFFER, sizeof(Camera), 0);
 
 	seeds = (unsigned int *)clSVMAlloc(context, CL_MEM_SVM_FINE_GRAIN_BUFFER, sizeof(unsigned int) * pixelCount * 2, 0);
 	for (int i = 0; i < pixelCount * 2; ++i) {
-		seeds[i] = rand();
+		seeds[i] = std::rand();
 		if (seeds[i] < 2)
 			seeds[i] = 2;
 	}
@@ -582,12 +582,12 @@ static void SetUpOpenCL() {
 
 	/*------------------------------------------------------------------------*/
 
-	AllocateBuffers();
+	AllocateOpenCLBuffers();
 
 	/*------------------------------------------------------------------------*/
 }
 
-static void ExecuteKernel() {
+static void ExecuteOpenCLKernel() {
 
 	/* Enqueue a kernel run command */
 	size_t globalThreads[1];
@@ -611,6 +611,8 @@ static void ExecuteKernel() {
 		fprintf(stderr, "Failed to enqueue OpenCL work: %d\n", status);
 		exit(-1);
 	}
+
+	clFinish(commandQueue);
 }
 
 void UpdateRendering() {
@@ -623,8 +625,7 @@ void UpdateRendering() {
 
 	//if (1 /*currentSample < 200*/) {
 
-	ExecuteKernel();
-	clFinish(commandQueue);
+	ExecuteOpenCLKernel();
 	++currentSample;
 
 	//	printf("done: %d\n", currentSample);
@@ -667,9 +668,9 @@ void ReInitScene() {
 void ReInit(const int reallocBuffers) {
 
 	if (reallocBuffers) {
-		FreeBuffers();
+		FreeOpenCLBuffers();
 		UpdateCamera();
-		AllocateBuffers();
+		AllocateOpenCLBuffers();
 	} else {
 		UpdateCamera();
 	}
@@ -715,7 +716,7 @@ int main(int argc, char *argv[]) {
     glutMainLoop();
 
 
-	FreeBuffers();
+	FreeOpenCLBuffers();
 
 	return 0;
 }
