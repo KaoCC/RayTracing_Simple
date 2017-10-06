@@ -8,6 +8,7 @@
 #include <string>
 #include <vector>
 
+
 #ifdef __APPLE__
 #include <OpenCL/OpenCL.h>
 #else
@@ -25,6 +26,7 @@
 // Cm Related
 
 #include "cm_rt.h"
+
 
 #ifdef CMRT_EMU
 
@@ -47,17 +49,37 @@ static cl_kernel kernel;
 static unsigned int workGroupSize = 1;
 static std::string kernelFileName = "RayTracing_Kernel.cl";
 
-
+// ------------------------
 
 // Cm stuff
 static CmDevice* pCmDev;
+static CmQueue* pCmQueue;
 
 static const std::string isaFileName = "RayTracing_Cm.isa";
 
+// host arrays
+static unsigned int *hostSeeds;
+static Vec* hostColor;
+Camera* hostCamera;
+Sphere* hostSpheres;
+Sphere* defaultSpheres;
 
+// Cm buffers
+
+CmBuffer* seedsBuffer;
+CmBuffer* colorBuffer;
+CmBuffer* cameraBuffer;
+CmBuffer* spheresBuffer;
+
+
+CmTask* pCmTask;
+
+
+
+
+// --------------
 
 static unsigned int *seeds;
-
 static Vec* color;
 
 //Camera camera;
@@ -117,6 +139,41 @@ static void AllocateOpenCLBuffers() {
 
 }
 
+
+
+static void AllocateCmBuffers() {
+	const int pixelCount = width * height;
+
+
+	// should change to smart pointer later.
+
+	// Camera
+	hostCamera = new Camera();
+	pCmDev->CreateBuffer(sizeof(Camera), cameraBuffer);
+
+	// seed
+	hostSeeds = new unsigned int[pixelCount * 2];
+	for (int i = 0; i < pixelCount * 2; ++i) {
+		hostSeeds[i] = std::rand();
+		if (hostSeeds[i] < 2)
+			hostSeeds[i] = 2;
+	}
+	
+	pCmDev->CreateBuffer(sizeof(unsigned int) * pixelCount * 2 , seedsBuffer);
+	
+
+
+	// pixels ?
+#pragma message ( "Pixel allocation is missing ! (AllocateCmBuffers)" )
+
+
+	// color
+	hostColor = new Vec[pixelCount];
+	pCmDev->CreateBuffer(sizeof(Vec) * pixelCount, colorBuffer);
+
+}
+
+
 static std::vector<char> ReadKernelSourcesFile(const std::string& fileName) {
 
 	FILE *file = fopen(fileName.c_str(), "rb");
@@ -161,7 +218,7 @@ static std::vector<char> ReadKernelSourcesFile(const std::string& fileName) {
 
 }
 
-static void SetUpKernelArguments()
+static void SetUpOpenCLKernelArguments()
 {
 		/* Set kernel arguments */
 	cl_int status = clSetKernelArgSVMPointer(
@@ -651,6 +708,48 @@ static void SetupCM() {
 	}
 
 
+	// Allocate Cm Buffers
+	AllocateCmBuffers();
+
+
+	// get index 
+	// 
+	SurfaceIndex* cameraIndex;
+	SurfaceIndex* seedsIndex;
+	SurfaceIndex* pixelIndex;
+	SurfaceIndex* colorIndex;
+	
+	cameraBuffer->GetIndex(cameraIndex);
+	seedsBuffer->GetIndex(seedsIndex);
+	
+	colorBuffer->GetIndex(colorIndex);
+
+
+	// Set Kernel Args (tmp)
+
+	// check the values !
+	cmKernel->SetKernelArg(0, sizeof(SurfaceIndex), cameraIndex);
+	cmKernel->SetKernelArg(1, sizeof(SurfaceIndex), seedsIndex);
+	//cmKernel->SetKernelArg(2, );
+	cmKernel->SetKernelArg(3, sizeof(SurfaceIndex), colorIndex);
+
+
+	// Create event ??
+
+
+	// create thread count, thread space 
+
+	//pCmDev->CreateThreadSpace();
+	//cmKernel->SetThreadCount();
+
+
+	// create Task
+	pCmDev->CreateTask(pCmTask);
+	pCmTask->AddKernel(cmKernel);
+
+	// create Queue
+	pCmDev->CreateQueue(pCmQueue);
+
 
 }
 
@@ -689,7 +788,7 @@ void UpdateRendering() {
 	double startTime = WallClockTime();
 	int startSampleCount = currentSample;
 
-	SetUpKernelArguments();
+	SetUpOpenCLKernelArguments();
 
 	//--------------------------------------------------------------------------
 
@@ -790,6 +889,8 @@ int main(int argc, char *argv[]) {
 
 
 	FreeOpenCLBuffers();
+
+
 
 	return 0;
 }
