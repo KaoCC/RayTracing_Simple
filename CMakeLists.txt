@@ -17,6 +17,8 @@ set(RT_DIR ${CMAKE_SOURCE_DIR}/SimpleRT)
 
 # for Cm Runtime and Compiler
 set(CM_DIR C:/Intel/MDF)
+#set(CM_ENV_SCRIPT C:/Intel/MDF/setupenv.bat)
+
 set(CM_RUNTIME_DIR ${CM_DIR}/runtime)
 set(CM_COMPILER_DIR ${CM_DIR}/compiler)
 

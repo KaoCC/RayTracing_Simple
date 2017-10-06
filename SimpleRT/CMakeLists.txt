@@ -55,6 +55,16 @@ add_custom_command(
     #VERBATIM
    )
 
+
+#add_custom_command(
+#    TARGET SimpleRT PRE_BUILD
+#    COMMAND ${CM_ENV_SCRIPT} ARGS x64 gen9
+    #WORKING_DIRECTORY ${CMAKE_BINARY_DIR}/bin/${CMAKE_CFG_INTDIR}
+#    COMMENT "SetupEnv"
+    #VERBATIM
+#   )
+
+
 if (WIN32)
     #set(WK_DIR "$<TARGET_FILE_DIR:Radiance>")
     set_target_properties(SimpleRT PROPERTIES VS_DEBUGGER_WORKING_DIRECTORY ${CMAKE_BINARY_DIR}/bin/${CMAKE_CFG_INTDIR})

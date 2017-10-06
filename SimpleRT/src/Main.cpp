@@ -610,7 +610,7 @@ static void SetUpOpenCL() {
 
 static void SetupCM() {
 
-	int result;
+	int result = 0;
 
 	pCmDev = nullptr;
 	UINT version = 0;
