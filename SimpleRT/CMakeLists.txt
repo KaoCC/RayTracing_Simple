@@ -23,11 +23,13 @@ add_executable(
     ./include/Sphere.hpp
     ./include/Utility.hpp
     ./include/Vec.hpp
+    ./include/CmSVMAllocator.hpp
 
     ./src/Main.cpp
     ./src/SetupGL.cpp
     ./src/Utility.cpp
     ./src/Vec.cpp
+    ./src/CmSVMAllocator.cpp
 )
 
 
