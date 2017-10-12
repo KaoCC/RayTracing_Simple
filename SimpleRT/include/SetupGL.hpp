@@ -17,7 +17,7 @@ extern char captionBuffer[256];
 void InitGlut(int argc, char *argv[], char *windowTittle);
 
 void ReadScene(char *);
-void UpdateCamera();
+void UpdateCamera(Camera* pCamera);
 
 #endif
 

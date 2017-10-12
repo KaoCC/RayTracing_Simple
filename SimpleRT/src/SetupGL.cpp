@@ -14,7 +14,7 @@
 extern void ReInit(const int);
 extern void ReInitScene();
 extern void UpdateRendering();
-extern void UpdateCamera();
+extern void UpdateCamera(Camera* pCamera);
 
 //extern Camera camera;
 extern Camera* cameraPtr;
@@ -105,33 +105,33 @@ void ReadScene(char *fileName) {
 	fclose(f);
 }
 
-void UpdateCamera() {
+void UpdateCamera(Camera* pCamera) {
 
 	//vsub(&cameraPtr->dir, &cameraPtr->target, &cameraPtr->orig);
-	cameraPtr->dir = cameraPtr->target - cameraPtr->orig;
+	pCamera->dir = pCamera->target - pCamera->orig;
 
 	//vnorm(&cameraPtr->dir);
-	cameraPtr->dir.norm();
+	pCamera->dir.norm();
 
 	const Vec up {0.f, 1.f, 0.f};
 	const float fov = static_cast<float>((M_PI / 180.f) * 45.f);
 	//vxcross(&cameraPtr->x, &cameraPtr->dir, &up);
-	cameraPtr->x = cameraPtr->dir.cross(up);
+	pCamera->x = pCamera->dir.cross(up);
 
 	//vnorm(&cameraPtr->x);
-	cameraPtr->x.norm();
+	pCamera->x.norm();
 
 	//vsmul(&cameraPtr->x, width * fov / height, &cameraPtr->x);
-	cameraPtr->x = cameraPtr->x * (width * fov / height);
+	pCamera->x = pCamera->x * (width * fov / height);
 
 	//vxcross(&cameraPtr->y, &cameraPtr->x, &cameraPtr->dir);
-	cameraPtr->y = cameraPtr->x.cross(cameraPtr->dir);
+	pCamera->y = pCamera->x.cross(pCamera->dir);
 
 	//vnorm(&cameraPtr->y);
-	cameraPtr->y.norm();
+	pCamera->y.norm();
 
 	//vsmul(&cameraPtr->y, fov, &cameraPtr->y);
-	cameraPtr->y = cameraPtr->y * fov;
+	pCamera->y = pCamera->y * fov;
 }
 
 void idleFunc(void) {

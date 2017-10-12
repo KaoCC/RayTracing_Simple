@@ -838,10 +838,10 @@ void ReInit(const int reallocBuffers) {
 
 	if (reallocBuffers) {
 		FreeOpenCLBuffers();
-		UpdateCamera();
+		UpdateCamera(cameraPtr);
 		AllocateOpenCLBuffers();
 	} else {
-		UpdateCamera();
+		UpdateCamera(cameraPtr);
 	}
 
 
@@ -878,7 +878,7 @@ int main(int argc, char *argv[]) {
 		exit(EXIT_FAILURE);
 	}
 
-	UpdateCamera();
+	UpdateCamera(cameraPtr);
 
 
 
