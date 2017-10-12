@@ -19,5 +19,9 @@ void InitGlut(int argc, char *argv[], char *windowTittle);
 void ReadScene(char *);
 void UpdateCamera(Camera* pCamera);
 
+
+// tmp
+void UpdateCameraCmBuffer();
+
 #endif
 
