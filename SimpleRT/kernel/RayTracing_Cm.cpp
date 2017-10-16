@@ -62,19 +62,23 @@ using CmRay_ref = vector_ref<float, rayVecSize>;
 using CmCamera = vector<float, cameraVecSize>;
 using CmCamrea_ref = vector_ref<float, cameraVecSize>;
 
+using CmSeed_ref = vector_ref<unsigned, 2>;
 
 
+// Tested with OpenCL
+_GENX_ float GetRandom(CmSeed_ref seeds) {
 
-_GENX_ float GetRandom(vector_ref<unsigned, 2> seeds) {
+    unsigned seed0 = seeds[0];
+    unsigned seed1 = seeds[1];
 
-    unsigned seed0 = seeds(0);
-    unsigned seed1 = seeds(1);
+//    printf("Cm before seed 0,1: %u, %u\n",seed0, seed1);
 
-    seeds(0) = 36969 * ((seed0) & 65535) + ((seed0) >> 16);
-	seeds(1) = 18000 * ((seed1) & 65535) + ((seed1) >> 16);
+    seeds[0] = 36969 * ((seed0) & 65535) + ((seed0) >> 16);
+	seeds[1] = 18000 * ((seed1) & 65535) + ((seed1) >> 16);
     
+    unsigned int ires = (seeds[0] << 16) + seeds[1];
 
-    unsigned int ires = ((seed0) << 16) + (seed1);
+//    printf("Cm seed 0,1: %u, %u  ires: %u\n",seed0, seed1, ires);
     
     /* Convert to float */
     union {
