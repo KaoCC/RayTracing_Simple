@@ -65,20 +65,27 @@ using CmCamrea_ref = vector_ref<float, cameraVecSize>;
 using CmSeed_ref = vector_ref<unsigned, 2>;
 
 
-// Tested with OpenCL
+_GENX_ void normalize(vector_ref<float, 3> v) {
+
+    // dot product
+    float dp = v[0] * v[0] + v[1] * v[1] + v[2] * v[2];
+    float f = 1.f / cm_sqrt(dp); 
+    v = f * v;
+}
+
 _GENX_ float GetRandom(CmSeed_ref seeds) {
 
     unsigned seed0 = seeds[0];
     unsigned seed1 = seeds[1];
 
-//    printf("Cm before seed 0,1: %u, %u\n",seed0, seed1);
+    //printf("Cm before seed 0,1: %u, %u\n",seed0, seed1);
 
     seeds[0] = 36969 * ((seed0) & 65535) + ((seed0) >> 16);
 	seeds[1] = 18000 * ((seed1) & 65535) + ((seed1) >> 16);
     
     unsigned int ires = ((seeds[0]) << 16) + (seeds[1]);
 
-//    printf("Cm seed 0,1: %u, %u  ires: %u\n",seed0, seed1, ires);
+    //printf("Cm seed 0,1: %u, %u  ires: %u\n",seed0, seed1, ires);
     
     /* Convert to float */
     union {
@@ -94,7 +101,7 @@ _GENX_ float GetRandom(CmSeed_ref seeds) {
 // Ray : Vec o, d => vector<float, 6>
 
 // for single ray ?
-_GENX_ void GenerateCameraRay(CmCamrea_ref camera, vector_ref<unsigned, 2> seeds, const int width, const int height, const int x, const int y, CmRay_ref ray) {
+_GENX_ void GenerateCameraRay(const CmCamrea_ref camera, vector_ref<unsigned, 2> seeds, const int width, const int height, const int x, const int y, CmRay_ref ray) {
 
     //test
     //seeds(0) = 10000;
@@ -108,6 +115,11 @@ _GENX_ void GenerateCameraRay(CmCamrea_ref camera, vector_ref<unsigned, 2> seeds
 	const float kcx = (x + r1) * invWidth - 0.5f;
     const float kcy = (y + r2) * invHeight - 0.5f;
     
+
+//    if (x == 0 && y == 0) {
+//        printf("seed0, seed1 r1, r2: %u %u %f, %f | %f, %f: \n", seeds[0], seeds[1], r1, r2,  kcx, kcy);
+//    }
+
     vector<float, 3> rdir;
 
 //    rdir(0) = camera(9) * kcx + camera(12) * kcy + camera(6);               // for x
@@ -115,9 +127,31 @@ _GENX_ void GenerateCameraRay(CmCamrea_ref camera, vector_ref<unsigned, 2> seeds
 //    rdir(2) = camera(9 + 2) * kcx + camera(12 + 2) * kcy + camera(6 + 2);   // for z
 
 
-    rdir = camera.select<3, 1>(9) * kcx + camera.select<3, 1>(12) * kcy + camera.select<3, 1>(6);
 
-    vector<float, 3> rorig = 0.1 * rdir + camera.select<3, 1>(0);
+//    if (x == 0 && y == 0) {
+        //printf("camera x.x: %f \n", camera(9));
+//        printf("cam : %f, %f, %f, %f, %f, %f, %f, %f, %f\n", camera(6), camera(7), camera(8), camera(9), camera(10), camera(11) ,camera(12), camera(13), camera(14));
+
+
+//        printf("cam select: %f, %f\n", camera.select<3, 1>(9)[0], camera.select<3, 1>(9)[1]);
+
+//    }
+
+    rdir = (camera.select<3, 1>(9) * kcx) + (camera.select<3, 1>(12) * kcy) + camera.select<3, 1>(6);
+
+//   if (x == 0 && y == 0) {
+//		printf("rdir: x, y, z %f %f %f\n", rdir[0], rdir[1], rdir[2]);
+//	}
+
+    vector<float, 3> rorig = (0.1 * rdir) + camera.select<3, 1>(0);
+
+
+    // KAOCC:  rdir match with CL
+
+
+    // normalize rdir !!!
+
+    normalize(rdir);
 
 
     ray.select<3, 1>(0) = rorig;
@@ -128,6 +162,9 @@ _GENX_ void GenerateCameraRay(CmCamrea_ref camera, vector_ref<unsigned, 2> seeds
         ray[i + 3] = rdir[i];
     }*/
 
+//    if (x == 0 && y == 0) {
+//        printf("Ray Gen: %f ,%f, %f | %f, %f, %f\n", ray[0], ray[1], ray[2], ray[3], ray[4], ray[5]);
+//    }
 
 
 }
@@ -201,6 +238,9 @@ RayTracing(SurfaceIndex cameraIndex, SurfaceIndex seedIndex, SurfaceIndex colorI
     GenerateCameraRay(camera, seedIn, width, height, x,  y, ray);
 
 
+    if (x == 0 && y == 0) {
+        printf("after function seedIn(0): %u\n", seedIn(0));
+    }
 
     //vector<unsigned int, 8> out;
 
