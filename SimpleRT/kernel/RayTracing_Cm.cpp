@@ -292,7 +292,7 @@ _GENX_ void radiancePathTracing(SurfaceIndex spheresIndex, const unsigned kSpher
 
         vector<float, 2> intersectResult;
         intersectResult[0] = 0.f;       /* distance to intersection */
-        intersectResult[0] = 0;         /* id of intersected object */
+        intersectResult[1] = 0;         /* id of intersected object */
 
 		if (!intersect(spheresIndex, kSphereCount, currentRay, intersectResult)) {
 			break;      /* if miss, break */
@@ -303,13 +303,14 @@ _GENX_ void radiancePathTracing(SurfaceIndex spheresIndex, const unsigned kSpher
         hitpoint = currentRay.select<3, 1>(0) + hitpoint;
 
 
-        printf("Hit!! %f %f %f\n", hitpoint[0], hitpoint[1], hitpoint[2]);
 
         // Normal
 
         // load the hit object first
+        unsigned hitID = intersectResult[1];
+        unsigned hitSphereOffset = sphereClassFloatcount * sizeof(float) * hitID;
 
-        unsigned hitSphereOffset = sphereClassFloatcount * sizeof(float) * intersectResult[1];
+        printf("Hit!! %f %f %f, %u\n", hitpoint[0], hitpoint[1], hitpoint[2], hitID);
 
         CmSphere hitSphere;
         read(spheresIndex, hitSphereOffset, hitSphere);
