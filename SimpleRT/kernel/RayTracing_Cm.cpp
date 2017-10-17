@@ -219,28 +219,28 @@ RayTracing(SurfaceIndex cameraIndex, SurfaceIndex seedIndex, SurfaceIndex colorI
 
     // tmp
     const unsigned seedOffset = (y * width + (x / 2) * 2) * sizeof(unsigned);
-    printf("Seed Offset: %d\n", seedOffset);
+//    printf("Seed Offset: %d\n", seedOffset);
     
     vector<unsigned int, 2> seedIn;
     read(seedIndex, seedOffset, seedIn);
 
-    printf("(%d, %d): before in(0): %u\n", x, y, seedIn(0));
+//    printf("(%d, %d): before in(0): %u\n", x, y, seedIn(0));
 
 
     // Camera
     CmCamera camera;
         
     read(cameraIndex, 0, camera);
-    printf("cam : %f, %f, %f, %f, %f, %f, %f, %f, %f\n", camera(6), camera(7), camera(8), camera(9), camera(10), camera(11) ,camera(12), camera(13), camera(14));
+//    printf("cam : %f, %f, %f, %f, %f, %f, %f, %f, %f\n", camera(6), camera(7), camera(8), camera(9), camera(10), camera(11) ,camera(12), camera(13), camera(14));
 
 
     CmRay ray;
     GenerateCameraRay(camera, seedIn, width, height, x,  y, ray);
 
 
-    if (x == 0 && y == 0) {
-        printf("after function seedIn(0): %u\n", seedIn(0));
-    }
+//    if (x == 0 && y == 0) {
+//        printf("after function seedIn(0): %u\n", seedIn(0));
+//    }
 
     //vector<unsigned int, 8> out;
 
