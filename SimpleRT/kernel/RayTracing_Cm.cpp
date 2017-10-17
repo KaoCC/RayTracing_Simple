@@ -173,8 +173,8 @@ _GENX_ void GenerateCameraRay(const CmCamrea_ref camera, vector_ref<unsigned, 2>
 
 //constexpr const unsigned seedOffset = sizeof(unsigned) * 2;
 
-extern "C" _GENX_MAIN_ void
-RayTracing(SurfaceIndex cameraIndex, SurfaceIndex seedIndex, SurfaceIndex colorIndex, SurfaceIndex spheresInedx, unsigned sphereCount) {
+_GENX_MAIN_ void
+RayTracing(SurfaceIndex cameraIndex, SurfaceIndex seedIndex, SurfaceIndex colorIndex, SurfaceIndex spheresIndex, unsigned sphereCount) {
     
     int x = get_thread_origin_x();
     int y = get_thread_origin_y();
