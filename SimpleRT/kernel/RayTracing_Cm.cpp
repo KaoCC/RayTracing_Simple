@@ -76,7 +76,7 @@ _GENX_ float GetRandom(CmSeed_ref seeds) {
     seeds[0] = 36969 * ((seed0) & 65535) + ((seed0) >> 16);
 	seeds[1] = 18000 * ((seed1) & 65535) + ((seed1) >> 16);
     
-    unsigned int ires = (seeds[0] << 16) + seeds[1];
+    unsigned int ires = ((seeds[0]) << 16) + (seeds[1]);
 
 //    printf("Cm seed 0,1: %u, %u  ires: %u\n",seed0, seed1, ires);
     
@@ -191,18 +191,16 @@ RayTracing(SurfaceIndex cameraIndex, SurfaceIndex seedIndex, SurfaceIndex colorI
 
 
     // Camera
-    CmCamera cameraParam;
+    CmCamera camera;
         
-    read(cameraIndex, 0, cameraParam);
-    printf("cam : %f, %f, %f, %f, %f, %f, %f, %f\n", cameraParam(0), cameraParam(1), cameraParam(2), cameraParam(3), cameraParam(4), cameraParam(5), cameraParam(6), cameraParam(7));
+    read(cameraIndex, 0, camera);
+    printf("cam : %f, %f, %f, %f, %f, %f, %f, %f, %f\n", camera(6), camera(7), camera(8), camera(9), camera(10), camera(11) ,camera(12), camera(13), camera(14));
 
 
     CmRay ray;
-    GenerateCameraRay(cameraParam, seedIn, width, height, x,  y, ray);
+    GenerateCameraRay(camera, seedIn, width, height, x,  y, ray);
 
-    printf("Ray Gen: %f ,%f, %f | %f, %f, %f\n", ray[0], ray[1], ray[2], ray[3], ray[4], ray[5]);
 
-    printf("after function seedIn(0): %u\n", seedIn(0));
 
     //vector<unsigned int, 8> out;
 
