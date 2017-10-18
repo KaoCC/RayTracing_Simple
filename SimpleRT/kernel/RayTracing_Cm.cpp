@@ -623,12 +623,23 @@ RayTracing(SurfaceIndex cameraIndex, SurfaceIndex seedIndex, SurfaceIndex colorI
     radiancePathTracing(spheresIndex, sphereCount, ray, seedIn, result); 
 
 
+    
 
 
     // convert to pixel color
 
 
     // ...
+
+    // single color?
+    vector<float, 3> color;
+
+    // TMP
+    const unsigned currentSample = 1;
+    const float k1 = currentSample;
+    const float k2 = 1.f / (currentSample + 1.f);
+
+    color = (color * k1 + result) * k2;
 
 
 //    if (x == 0 && y == 0) {
