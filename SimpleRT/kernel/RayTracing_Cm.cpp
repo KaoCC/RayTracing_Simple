@@ -211,7 +211,7 @@ _GENX_ float sphereIntersect(const CmSphere_ref sphere, const CmRay_ref ray) {
 
     vector<float, 3> op = sphere.select<3, 1>(1) - ray.select<3, 1>(0);         // s->p - r->o
     float b = vecDot(op, ray.select<3, 1>(3));     // op , r->d
-    float det = b * b - vecDot(op, op) + sphere[0] * sphere[0];
+    float det = (b * b) - vecDot(op, op) + (sphere[0] * sphere[0]);
 
     if (det < 0.f)
         return 0.f;
@@ -238,18 +238,16 @@ _GENX_ float sphereIntersect(const CmSphere_ref sphere, const CmRay_ref ray) {
 
 // intersectResult: distance, sphere id
 
-// yet to be done
+// yet to be checked
 _GENX_ bool intersect(SurfaceIndex spheresIndex, const unsigned kSphereCount, const CmRay_ref currentRay, vector_ref<float, 2> intersectResult) {
 
     float inf = intersectResult[0] = 1e20f;
 
-    unsigned sphereOffset = 0;
-
     // test with all the spheres in the scene 
     for (unsigned i = 0; i < kSphereCount; ++i) {
 
-        // read from SphereIndex and pass to the function
-        sphereOffset = sphereClassFloatcount * sizeof(float) * i;
+        // read from spheresIndex and pass to the function
+        unsigned sphereOffset = sphereClassFloatcount * sizeof(float) * i;
 
         CmSphere sphere;
         read(spheresIndex, sphereOffset, sphere);
@@ -266,6 +264,118 @@ _GENX_ bool intersect(SurfaceIndex spheresIndex, const unsigned kSphereCount, co
     
     return (intersectResult[0] < inf);
 }
+
+
+_GENX_ bool intersectP(SurfaceIndex spheresIndex, const unsigned kSphereCount, const CmRay_ref currentRay, const float maVal) {
+
+
+    for (unsigned i = 0 ; i < kSphereCount; ++i) {
+
+        // read the sphere
+        unsigned sphereOffset = sphereClassFloatcount * sizeof(float) * i;
+        
+        CmSphere sphere;
+        read(spheresIndex, sphereOffset, sphere);
+
+        const float d = sphereIntersect(sphere, currentRay);
+
+        if ((d != 0.f) && (d < maVal)) {
+            return true;
+        }
+
+    }
+
+    return false;
+}
+
+_GENX_ vector<float, 3> uniformSampleSphere(const float u1, const float u2) {
+
+    const float z = 1.f - 2.f * u1;
+    const float r = cm_sqrt(cm_max<float>(0.f, 1.f - z * z));    //distance from the center
+
+    const float phi = 2.f * FLOAT_PI * u2;
+	const float x = r * cm_cos(phi);
+    const float y = r * cm_sin(phi);
+    
+
+    vector<float, 3> result;
+
+    result[0] = x;
+    result[1] = y;
+    result[2] = z;
+
+    return result;
+}
+
+_GENX_ void sampleLights(SurfaceIndex spheresIndex, const unsigned kSphereCount, CmSeed_ref seeds,  const vector_ref<float, 3> hitPoint, const vector_ref<float, 3> normal, vector_ref<float, 3> result) {
+
+    // clear
+    for (unsigned i = 0; i < 3; ++i) {
+        result[i] = 0;
+    }
+
+
+
+    for (unsigned i = 0 ; i < kSphereCount; ++i) {
+
+        // read sphere
+        unsigned lightOffset = sphereClassFloatcount * sizeof(float) * i;
+        CmSphere light;
+        read(spheresIndex, lightOffset, light);
+
+        if (!vecIsZero(light.select<3, 1>(4))) {
+
+            // it is a light source !
+
+            // test
+            //printf("Light source !!\n");
+
+            CmRay shadowRay;
+            shadowRay.select<3, 1>(0) = hitPoint;       // r.o
+            
+            /* Choose a point over the light source */
+
+            vector<float, 3> unitSpherePoint = uniformSampleSphere(getRandom(seeds), getRandom(seeds));
+
+            vector<float, 3> spherePoint = light[0] * unitSpherePoint;
+            spherePoint = spherePoint + light.select<3, 1>(1);
+            
+            /* Build the shadow ray direction */
+
+            shadowRay.select<3, 1>(3) = spherePoint - hitPoint;         // r.d
+            const float len = cm_sqrt(vecDot(shadowRay.select<3, 1>(3), shadowRay.select<3, 1>(3)));
+            shadowRay.select<3, 1>(3) = (1.f / len) * shadowRay.select<3, 1>(3);
+
+            float wo = vecDot(shadowRay.select<3, 1>(3), unitSpherePoint);
+			if (wo > 0.f) {	
+                /* It is on the other half of the sphere */
+                continue;
+            } else {
+                wo = -wo;
+            }
+
+
+
+            /* Check if the light is visible */
+
+            const float wi = vecDot(shadowRay.select<3, 1>(3), normal);
+            if ((wi > 0.f) && (!intersectP(spheresIndex, kSphereCount, shadowRay, len - kEpsilon))) {       // note :  if wi <= 0, the hitpoint is on the back of the sphere
+
+                vector<float, 3> c = light.select<3, 1>(4);
+                const float s = (4.f * FLOAT_PI * light[0] * light[0]) * wi * wo / (len * len);
+                c = s * c;
+                result = result + c;
+            }
+            
+
+        }
+
+
+    }
+
+}
+
+
 
 // single ray version
 _GENX_ void radiancePathTracing(SurfaceIndex spheresIndex, const unsigned kSphereCount, const CmRay_ref startRay, CmSeed_ref seeds, vector_ref<float, 3> result) {
@@ -302,7 +412,7 @@ _GENX_ void radiancePathTracing(SurfaceIndex spheresIndex, const unsigned kSpher
 
         vector<float, 2> intersectResult;
         intersectResult[0] = 0.f;       /* distance to intersection */
-        intersectResult[1] = 0;         /* id of intersected object */
+        intersectResult[1] = -1;         /* id of intersected object */
 
 		if (!intersect(spheresIndex, kSphereCount, currentRay, intersectResult)) {
 			break;      /* if miss, break */
@@ -310,8 +420,7 @@ _GENX_ void radiancePathTracing(SurfaceIndex spheresIndex, const unsigned kSpher
         
         // hit point infoirmation
         vector<float, 3> hitpoint = intersectResult[0] * currentRay.select<3, 1>(3);     // t * r->d
-        hitpoint = currentRay.select<3, 1>(0) + hitpoint;
-
+        hitpoint = currentRay.select<3, 1>(0) + hitpoint;           // new hit  = o + td
 
 
         // Normal
@@ -356,20 +465,20 @@ _GENX_ void radiancePathTracing(SurfaceIndex spheresIndex, const unsigned kSpher
 
         // Applying Rendering based on surface propery 
 
-        int refl = hitSphere[10];
+        int refl = hitSphere[10];       // get refl property
 
         if (refl == DIFF) {
             specularBounce = 0;
 
-            throughput = throughput *  hitSphere.select<3, 1>(7);
+            throughput = throughput *  hitSphere.select<3, 1>(7);           // s->c
 
             /* Direct lighting component */
 
             vector<float, 3> Ld;
 
 
-            // --- KAOCC:  sample light ?!??!??!?!
-
+            // KAOCC:  sample light
+            sampleLights(spheresIndex, kSphereCount, seeds, hitpoint, normal, Ld);
 
 
             Ld = throughput * Ld;
@@ -378,16 +487,38 @@ _GENX_ void radiancePathTracing(SurfaceIndex spheresIndex, const unsigned kSpher
             /* Diffuse component */
             float r1 = 2.f * FLOAT_PI * getRandom(seeds);	// Random angle
             float r2 = getRandom(seeds);
-            float r2s = cm_sqrt(r2); // Random distance from center
+            float r2s = cm_sqrt(r2);                        // Random distance from center
 
             // Create coordinate system for sphere: w u v
 
             vector<float, 3> w = nl;
 
+            vector<float, 3> u;
+            vector<float, 3> a;
 
-            // ...
+            if (cm_abs(w[0]) > .1f) {       // test w.x
+                a[0] = 0.f;
+                a[1] = 1.f;
+                a[2] = 0.f;
+            } else {
+                a[0] = 1.f;
+                a[1] = 0.f;
+                a[2] = 0.f;
+            }
 
-            vector<float, 3> newDir;
+
+            // cross
+            u = vecCross(a, w);
+            normalize(u);
+
+            vector<float, 3> v = vecCross(w, u);
+
+            u = (cm_cos(r1) * r2s) * u;
+            v = (cm_sin(r1) * r2s) * v;
+
+            vector<float, 3> newDir = u + v;
+            w = cm_sqrt(1 - r2) * w;
+            newDir = newDir + w;
 
             currentRay.select<3, 1>(0) = hitpoint;
             currentRay.select<3, 1>(3) = newDir;
@@ -406,6 +537,8 @@ _GENX_ void radiancePathTracing(SurfaceIndex spheresIndex, const unsigned kSpher
             currentRay.select<3, 1>(3) = newDir;
 
         } else if (refl == REFR) {
+
+
 
         } else {
             // Error here
@@ -494,6 +627,8 @@ RayTracing(SurfaceIndex cameraIndex, SurfaceIndex seedIndex, SurfaceIndex colorI
 
     // convert to pixel color
 
+
+    // ...
 
 
 //    if (x == 0 && y == 0) {
