@@ -35,6 +35,9 @@ const float kEpsilon = 0.01f;
 const unsigned kWidth = 800;
 const unsigned kHeight = 600;
 
+constexpr const unsigned threadCountX = 10;
+constexpr const unsigned threadCountY = 10;
+
 
 constexpr const unsigned sphereClassFloatcount =  12;       // padding
 constexpr const unsigned cameraClassFloatcount =  15;       // check alignment
@@ -314,8 +317,6 @@ _GENX_ void sampleLights(SurfaceIndex spheresIndex, const unsigned kSphereCount,
         result[i] = 0;
     }
 
-
-
     for (unsigned i = 0 ; i < kSphereCount; ++i) {
 
         // read sphere
@@ -402,8 +403,6 @@ _GENX_ void radiancePathTracing(SurfaceIndex spheresIndex, const unsigned kSpher
     for (unsigned i = 0 ; i < 3; ++i) {
         throughput[i] = 1.f;
     }
-
-    // init current ray ?
 
     for (unsigned int depth = 0; depth < kMaxNumOfBounce; ++depth) {
 
@@ -598,16 +597,50 @@ RayTracing(SurfaceIndex cameraIndex, SurfaceIndex seedIndex, SurfaceIndex colorI
     const unsigned width = kWidth;
     const unsigned height = kHeight;
 
+    // tmp
+
+
+
+    // W, H, 
+    // Tx = x thread count, Ty
+
+    // upper left pixel index: (H/Ty) * y * width + (W/Tx) * x
+
+    // seed index = (2 * pixel index, 2 * pixel index + 1)
+
+
+    unsigned upperLeftPixelNumber = (height / threadCountY) * y * width + (width / threadCountX) * x;
+
+    // test
+    printf("x, y : (%u, %u) Upper left pixel number (id): %u\n", x , y,  upperLeftPixelNumber);
+    
+    unsigned firstSeedNumber = 2 * upperLeftPixelNumber;
 
     // tmp
-    const unsigned seedOffset = (y * width + (x / 2) * 2) * sizeof(unsigned);
-//    printf("Seed Offset: %d\n", seedOffset);
+    // Error: OWORD align ...
+
+    const unsigned offsetStart = (firstSeedNumber / 4) * 4;
+    const unsigned localIndex = firstSeedNumber % 4;
+
+    const unsigned seedOffset = offsetStart * 4;
     
-    vector<unsigned int, 2> seedIn;
-    read(seedIndex, seedOffset, seedIn);
+    // KAOCC: Check offset !!!!!       It must be OWORD aligned !
 
-//    printf("(%d, %d): before in(0): %u\n", x, y, seedIn(0));
+    vector<unsigned int, 4> seedIn;
+    read(seedIndex,  seedOffset , seedIn);
 
+    printf("firstSeedNumber: %u, Seed Offset: %u seedIn<4>: %u %u %u %u\n", firstSeedNumber, seedOffset, seedIn(0), seedIn(1), seedIn(2), seedIn(3));
+
+
+    // extra:
+
+    //vector<unsigned int, 4> seedIn;
+//    read(seedIndex,  16 , seedIn);
+
+//    printf("Extra: firstSeedNumber: %u, Seed Offset: %u seedIn<4>: %u %u %u %u\n", 4, 4 * 16, seedIn(0), seedIn(1), seedIn(2), seedIn(3));
+
+
+    vector<unsigned, 2> seedFinal = seedIn.select<2, 1>(localIndex);
 
     // Camera
     CmCamera camera;
@@ -617,10 +650,10 @@ RayTracing(SurfaceIndex cameraIndex, SurfaceIndex seedIndex, SurfaceIndex colorI
 
 
     CmRay ray;
-    generateCameraRay(camera, seedIn, width, height, x,  y, ray);
+    generateCameraRay(camera, seedFinal, width, height, x,  y, ray);
 
     vector<float, 3> result;
-    radiancePathTracing(spheresIndex, sphereCount, ray, seedIn, result); 
+    radiancePathTracing(spheresIndex, sphereCount, ray, seedFinal, result); 
 
 
     
