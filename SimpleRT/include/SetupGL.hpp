@@ -10,7 +10,7 @@
 
 extern int width;
 extern int height;
-extern unsigned int *pixels;
+//extern unsigned int *pixels;
 extern unsigned int renderingFlags;
 extern char captionBuffer[256];
 

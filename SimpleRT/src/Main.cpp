@@ -36,6 +36,8 @@
 
 #endif
 
+//OpenCL pixel buffer;
+extern unsigned int *pixels;
 
 /* Options Flags*/
 static int useGPU = 0;
@@ -60,12 +62,13 @@ static CmQueue* pCmQueue;
 static const std::string isaFileName = "RayTracing_Cm.isa";
 
 // host arrays
-static unsigned int *hostSeeds;
+static unsigned int* hostSeeds;
 static Vec* hostColor;
 Camera* hostCamera;
 Sphere* hostSpheres;
 Sphere* defaultSpheres;
 unsigned  defaultSphereCount = 0;
+static unsigned int* hostPixels;
 
 // Cm buffers
 
@@ -99,7 +102,7 @@ static int currentSample = 0;
 Sphere *spheres;
 Sphere *spheres_host_ptr;
 unsigned int sphereCount;
-
+static unsigned int* clPixels;
 
 // selection parameters
 static const int kPlatformID = 0;
@@ -200,7 +203,7 @@ static void FreeOpenCLBuffers() {
 	// openCL Buffer: color, pixel, seed
 
 	clSVMFree(context, seeds);
-	clSVMFree(context, pixels);
+	clSVMFree(context, clPixels);
 	clSVMFree(context, color);
 	clSVMFree(context, spheres);
 }
@@ -216,7 +219,7 @@ static void AllocateOpenCLBuffers() {
 			seeds[i] = 2;
 	}
 
-	pixels = (unsigned int *)clSVMAlloc(context, CL_MEM_SVM_FINE_GRAIN_BUFFER, sizeof(unsigned int) * pixelCount, 0);
+	clPixels = (unsigned int *)clSVMAlloc(context, CL_MEM_SVM_FINE_GRAIN_BUFFER, sizeof(unsigned int) * pixelCount, 0);
 
 	color = (Vec*)clSVMAlloc(context, CL_MEM_SVM_FINE_GRAIN_BUFFER, sizeof(Vec) * pixelCount, 0);
 
@@ -414,7 +417,7 @@ static void SetUpOpenCLKernelArguments()
 	status = clSetKernelArgSVMPointer(
 			kernel,
 			8,
-			pixels);
+			clPixels);
 
 	if (status != CL_SUCCESS) {
 		fprintf(stderr, "Failed to set OpenCL arg. #9: %d\n", status);
@@ -1080,6 +1083,11 @@ int main(int argc, char *argv[]) {
 	//SetupCmDefaultScene();
 	UpdateCameraCmBuffer();
 	ExecuteCmKernel();
+
+	// set OpenGL pixel pointer here !
+
+	pixels = clPixels;
+	
 
 	InitGlut(argc, argv, "OpenCL Ray Tracing Experiment");
 	
