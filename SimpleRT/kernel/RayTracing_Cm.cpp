@@ -89,6 +89,16 @@ _GENX_ bool vecIsZero(const vector_ref<float, 3> v) {
     return (v[0] == 0) && (v[1] == 0) && (v[2] == 0);
 }
 
+_GENX_ vector<float, 3> vecCross(const vector_ref<float, 3> a, const vector_ref<float, 3> b) {
+    vector<float, 3> ret;
+
+    ret[0] = a[1] * b[2] - a[2] * b[1];
+    ret[1] = a[2] * b[0] - a[0] * b[2];
+    ret[2] = a[0] * b[1] - a[1] * b[0];
+
+    return ret;
+}
+
 _GENX_ void normalize(vector_ref<float, 3> v) {
 
     // dot product
