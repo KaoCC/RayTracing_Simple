@@ -282,8 +282,27 @@ static void AllocateCmBuffers() {
 
 	// bad design, for testing only
 	// Vec 3
-	hostColor = reinterpret_cast<Vec*>(new float[3 * pixelCount]);
-	pCmDev->CreateBuffer(sizeof(float) * 3 * pixelCount, colorBuffer);
+
+	// add padding for alignmen issue
+	const unsigned kColorFloatCount = 3 + 1;	// Vec(3) + 1 float padding
+
+	hostColor = reinterpret_cast<Vec*>(new float[kColorFloatCount * pixelCount]);
+	pCmDev->CreateBuffer(sizeof(float) * kColorFloatCount * pixelCount, colorBuffer);
+
+	// tmp init to zero, should be changed later 
+	float* tmpColor = (float*)hostColor;
+	for (int i = 0; i < kColorFloatCount * pixelCount; ++i) {
+		tmpColor[i] = 0;
+	}
+
+	hostPixels = new unsigned[pixelCount];
+
+	// tmp disable 
+	//pCmDev->CreateBuffer(sizeof(unsigned) * pixelCount , pixelBuffer);
+
+	for (int i = 0; i < pixelCount; ++i) {
+		hostPixels = 0;
+	}
 
 
 }
