@@ -665,15 +665,35 @@ RayTracing(SurfaceIndex cameraIndex, SurfaceIndex seedIndex, SurfaceIndex colorI
 
     // ...
 
+
+    unsigned upperLeftColorNumber = upperLeftPixelNumber;
+    unsigned colorOffset = upperLeftColorNumber * 16;
+
     // single color?
-    vector<float, 3> color;
+    vector<float, kColorFloatcount> color;
+
+    // read color ?
+    read(colorIndex, colorOffset, color);
+
+    //printf("read color: %f %f %f %f\n", color[0], color[1], color[2], color[3]);
+    
 
     // TMP
-    const unsigned currentSample = 1;
+    const unsigned currentSample = 0;       // Eventually it should be written from host
     const float k1 = currentSample;
     const float k2 = 1.f / (currentSample + 1.f);
 
-    color = (color * k1 + result) * k2;
+    color.select<3,1>(0) = (color.select<3,1>(0) * k1 + result) * k2;
+
+    // test only
+    color[3] = -1;
+
+
+    printf("(%d, %d) write color: %f %f %f %f\n", x , y, color[0], color[1], color[2], color[3]);
+
+    write(colorIndex, colorOffset, color);
+
+
 
 
 //    if (x == 0 && y == 0) {
