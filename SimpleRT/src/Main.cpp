@@ -301,7 +301,7 @@ static void AllocateCmBuffers() {
 	//pCmDev->CreateBuffer(sizeof(unsigned) * pixelCount , pixelBuffer);
 
 	for (int i = 0; i < pixelCount; ++i) {
-		hostPixels = 0;
+		hostPixels[i] = 0;
 	}
 
 
