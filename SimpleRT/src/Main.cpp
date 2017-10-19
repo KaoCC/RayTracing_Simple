@@ -29,6 +29,19 @@
 
 #include "cm_rt.h"
 
+// simple impl.
+float clamp(float x, float low, float high) {
+	if (x < low) {
+		return low;
+	} else if (x > high) {
+		return high;
+	} else {
+		return x;
+	}
+}
+
+// TEST !
+#define toInt(x) ((int)(pow(clamp(x, 0.f, 1.f), 1.f / 2.2f) * 255.f + .5f))
 
 #ifdef CMRT_EMU
 
