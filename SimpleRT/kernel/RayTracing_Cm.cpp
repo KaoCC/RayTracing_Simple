@@ -39,12 +39,13 @@ constexpr const unsigned threadCountX = 10;
 constexpr const unsigned threadCountY = 10;
 
 
-constexpr const unsigned sphereClassFloatcount =  12;       // padding
-constexpr const unsigned cameraClassFloatcount =  15;       // check alignment
+constexpr const unsigned kSphereClassFloatcount =  12;       // padding
+constexpr const unsigned kCameraClassFloatcount =  15;       // check alignment
 
-constexpr const unsigned cameraVecSize = cameraClassFloatcount;
+constexpr const unsigned cameraVecSize = kCameraClassFloatcount;
 constexpr const unsigned rayVecSize = 6;
 
+constexpr const unsigned kColorFloatcount = 4;
 
 // not used, for reference only
 struct Camera {
@@ -80,8 +81,8 @@ using CmCamrea_ref = vector_ref<float, cameraVecSize>;
 
 using CmSeed_ref = vector_ref<unsigned, 2>;
 
-using CmSphere = vector<float, sphereClassFloatcount>;
-using CmSphere_ref = vector_ref<float, sphereClassFloatcount>;
+using CmSphere = vector<float, kSphereClassFloatcount>;
+using CmSphere_ref = vector_ref<float, kSphereClassFloatcount>;
 
 
 _GENX_ float vecDot(const vector_ref<float, 3> a, const vector_ref<float, 3> b) {
@@ -250,7 +251,7 @@ _GENX_ bool intersect(SurfaceIndex spheresIndex, const unsigned kSphereCount, co
     for (unsigned i = 0; i < kSphereCount; ++i) {
 
         // read from spheresIndex and pass to the function
-        unsigned sphereOffset = sphereClassFloatcount * sizeof(float) * i;
+        unsigned sphereOffset = kSphereClassFloatcount * sizeof(float) * i;
 
         CmSphere sphere;
         read(spheresIndex, sphereOffset, sphere);
@@ -275,7 +276,7 @@ _GENX_ bool intersectP(SurfaceIndex spheresIndex, const unsigned kSphereCount, c
     for (unsigned i = 0 ; i < kSphereCount; ++i) {
 
         // read the sphere
-        unsigned sphereOffset = sphereClassFloatcount * sizeof(float) * i;
+        unsigned sphereOffset = kSphereClassFloatcount * sizeof(float) * i;
         
         CmSphere sphere;
         read(spheresIndex, sphereOffset, sphere);
@@ -320,7 +321,7 @@ _GENX_ void sampleLights(SurfaceIndex spheresIndex, const unsigned kSphereCount,
     for (unsigned i = 0 ; i < kSphereCount; ++i) {
 
         // read sphere
-        unsigned lightOffset = sphereClassFloatcount * sizeof(float) * i;
+        unsigned lightOffset = kSphereClassFloatcount * sizeof(float) * i;
         CmSphere light;
         read(spheresIndex, lightOffset, light);
 
@@ -426,7 +427,7 @@ _GENX_ void radiancePathTracing(SurfaceIndex spheresIndex, const unsigned kSpher
 
         // load the hit object first
         unsigned hitID = intersectResult[1];
-        unsigned hitSphereOffset = sphereClassFloatcount * sizeof(float) * hitID;
+        unsigned hitSphereOffset = kSphereClassFloatcount * sizeof(float) * hitID;
 
         printf("Hit!! %f %f %f, %u\n", hitpoint[0], hitpoint[1], hitpoint[2], hitID);
 
@@ -585,12 +586,12 @@ RayTracing(SurfaceIndex cameraIndex, SurfaceIndex seedIndex, SurfaceIndex colorI
     // test
     /*for (unsigned i = 0 ; i < sphereCount; ++i ) {
             // Sphere buffer
-        vector<float, sphereClassFloatcount> sphereParam;
+        vector<float, kSphereClassFloatcount> sphereParam;
         read(spheresInedx, sphereOffset, sphereParam);
 
         printf("[%d] Sphere rad: %f\n, p: %f ,%f, %f\n, e: %f, %f, %f\n", i, sphereParam(0), sphereParam(1), sphereParam(2), sphereParam(3), sphereParam(4), sphereParam(5), sphereParam(6) );
 
-        sphereOffset += sphereClassFloatcount * sizeof(float);
+        sphereOffset += kSphereClassFloatcount * sizeof(float);
     }*/
 
 
