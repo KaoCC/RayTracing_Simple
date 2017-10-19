@@ -429,7 +429,7 @@ _GENX_ void radiancePathTracing(SurfaceIndex spheresIndex, const unsigned kSpher
         unsigned hitID = intersectResult[1];
         unsigned hitSphereOffset = kSphereClassFloatcount * sizeof(float) * hitID;
 
-        printf("Hit!! %f %f %f, %u\n", hitpoint[0], hitpoint[1], hitpoint[2], hitID);
+        printf("Hit!! %f %f %f, ID: %u, depth: %u\n", hitpoint[0], hitpoint[1], hitpoint[2], hitID, depth);
 
         CmSphere hitSphere;
         read(spheresIndex, hitSphereOffset, hitSphere);
@@ -484,6 +484,9 @@ _GENX_ void radiancePathTracing(SurfaceIndex spheresIndex, const unsigned kSpher
             Ld = throughput * Ld;
             rad = rad + Ld;
 
+            // test
+            printf("DIFF rad: %f %f %f | ID: %u, depth: %u\n", rad[0], rad[1], rad[2], hitID, depth);
+
             /* Diffuse component */
             float r1 = 2.f * FLOAT_PI * getRandom(seeds);	// Random angle
             float r2 = getRandom(seeds);
@@ -525,6 +528,8 @@ _GENX_ void radiancePathTracing(SurfaceIndex spheresIndex, const unsigned kSpher
 
         } else if (refl == SPEC) {
             specularBounce = 1;
+
+            printf("SPEC | depth: %u \n", depth);
 
             // R = D - 2(Nornal dot D)Normal
             vector<float, 3> newDir = (2 * vecDot(normal, currentRay.select<3, 1>(3))) * normal;
@@ -637,7 +642,7 @@ RayTracing(SurfaceIndex cameraIndex, SurfaceIndex seedIndex, SurfaceIndex colorI
     int x = get_thread_origin_x();
     int y = get_thread_origin_y();
 
-    printf("(x, y) : (%d, %d)\n", x, y);
+    //printf("(x, y) : (%d, %d)\n", x, y);
 
 
     //printf("Sphere count: %d\n", sphereCount);
@@ -677,6 +682,12 @@ RayTracing(SurfaceIndex cameraIndex, SurfaceIndex seedIndex, SurfaceIndex colorI
     // tmp
 
 
+    // Camera
+    CmCamera camera;
+        
+    read(cameraIndex, 0, camera);
+//    printf("cam : %f, %f, %f, %f, %f, %f, %f, %f, %f\n", camera(6), camera(7), camera(8), camera(9), camera(10), camera(11) ,camera(12), camera(13), camera(14));
+
 
     // W, H, 
     // Tx = x thread count, Ty
@@ -687,9 +698,70 @@ RayTracing(SurfaceIndex cameraIndex, SurfaceIndex seedIndex, SurfaceIndex colorI
 
 
     unsigned upperLeftPixelNumber = (height / threadCountY) * y * width + (width / threadCountX) * x;
+    unsigned lowerRightPixelBound = (height / threadCountY) * (y + 1) * width + (width / threadCountX) * (x + 1);
 
+    
     // test
     printf("x, y : (%u, %u) Upper left pixel number (id): %u\n", x , y,  upperLeftPixelNumber);
+
+
+    for (unsigned iNum = upperLeftPixelNumber; iNum < lowerRightPixelBound; ++iNum) {
+
+        unsigned seedNum = 2 * iNum;
+
+        const unsigned offsetStart = (seedNum / 4) * 4;
+        const unsigned localIndex = seedNum % 4;
+    
+        const unsigned seedOffset = offsetStart * 4;
+
+        vector<unsigned int, 4> seedIn;
+        read(seedIndex,  seedOffset , seedIn);
+
+
+        vector<unsigned, 2> seedFinal = seedIn.select<2, 1>(localIndex);
+
+        CmRay ray;
+        generateCameraRay(camera, seedFinal, width, height, iNum % width,  iNum / width, ray);        // check x, y
+    
+        vector<float, 3> result;
+        radiancePathTracing(spheresIndex, sphereCount, ray, seedFinal, result); 
+
+
+        unsigned currentColorNumber = iNum;
+        unsigned colorOffset = currentColorNumber * 16;
+    
+        // single color?
+        vector<float, kColorFloatcount> color;
+    
+        // read color ?
+        read(colorIndex, colorOffset, color);
+    
+        //printf("read color: %f %f %f %f\n", color[0], color[1], color[2], color[3]);
+        
+    
+        // TMP
+        const unsigned currentSample = 0;       // Eventually it should be written from host
+        const float k1 = currentSample;
+        const float k2 = 1.f / (currentSample + 1.f);
+    
+        color.select<3,1>(0) = (color.select<3,1>(0) * k1 + result) * k2;
+    
+        // test only
+        color[3] = -1;
+    
+    
+        //printf("(%d, %d) write color: %f %f %f %f\n", x , y, color[0], color[1], color[2], color[3]);
+    
+        write(colorIndex, colorOffset, color);        
+
+    }
+
+
+
+
+/*
+    //  ------------ templates -------------
+
     
     unsigned firstSeedNumber = 2 * upperLeftPixelNumber;
 
@@ -719,21 +791,12 @@ RayTracing(SurfaceIndex cameraIndex, SurfaceIndex seedIndex, SurfaceIndex colorI
 
     vector<unsigned, 2> seedFinal = seedIn.select<2, 1>(localIndex);
 
-    // Camera
-    CmCamera camera;
-        
-    read(cameraIndex, 0, camera);
-//    printf("cam : %f, %f, %f, %f, %f, %f, %f, %f, %f\n", camera(6), camera(7), camera(8), camera(9), camera(10), camera(11) ,camera(12), camera(13), camera(14));
-
-
     CmRay ray;
     generateCameraRay(camera, seedFinal, width, height, x,  y, ray);
 
     vector<float, 3> result;
     radiancePathTracing(spheresIndex, sphereCount, ray, seedFinal, result); 
 
-
-    
 
 
     // convert to pixel color
@@ -765,12 +828,12 @@ RayTracing(SurfaceIndex cameraIndex, SurfaceIndex seedIndex, SurfaceIndex colorI
     color[3] = -1;
 
 
-    printf("(%d, %d) write color: %f %f %f %f\n", x , y, color[0], color[1], color[2], color[3]);
+    //printf("(%d, %d) write color: %f %f %f %f\n", x , y, color[0], color[1], color[2], color[3]);
 
     write(colorIndex, colorOffset, color);
 
 
-
+*/
 
 //    if (x == 0 && y == 0) {
 //        printf("after function seedIn(0): %u\n", seedIn(0));

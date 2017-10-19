@@ -276,7 +276,20 @@ static void AllocateCmBuffers() {
 		if (hostSeeds[i] < 2)
 			hostSeeds[i] = 2;
 	}
-	
+
+	// test
+
+	//std::cerr << "SEED TEST\n";
+	//for (int i = 0; i < 8; ++i) {
+	//	std::cerr << hostSeeds[i] << std::endl;
+	//}
+
+	//std::cerr << "hostSeed 160: " << hostSeeds[160] << std::endl;
+
+	//std::cerr << "END SEED TEST\n";
+
+
+
 	pCmDev->CreateBuffer(sizeof(unsigned int) * pixelCount * 2 , seedsBuffer);
 	
 
@@ -993,22 +1006,44 @@ static void ExecuteCmKernel() {
 
 
 	// tmp, we do not need to read back seed
-	seedsBuffer->ReadSurface(reinterpret_cast<unsigned char*>(hostSeeds), pCmEvent);
+//	seedsBuffer->ReadSurface(reinterpret_cast<unsigned char*>(hostSeeds), pCmEvent);
 
 	colorBuffer->ReadSurface(reinterpret_cast<unsigned char*>(hostColor), pCmEvent);
 
 	pCmEvent->WaitForTaskFinished();
 
+	// tmp color test
+	float* tmpColorPtr = reinterpret_cast<float*>(hostColor);
+	std::cerr << "Color 0 1 2 pading: " << tmpColorPtr[0] << " " << tmpColorPtr[1] << " " << tmpColorPtr[2] << " " << tmpColorPtr[3] << " " << std::endl;
+
+
+	// convert to pixel here ...
+
+	// design trade-off : use Cm to convert and read/write the pixel value or do it locally (with CPU) ?
+
+	
+
+	const int pixelCount = width * height;
+	for (auto i = 0; i < pixelCount; ++i) {
+		hostPixels[i] = (toInt(tmpColorPtr[4 * i])) | (toInt(tmpColorPtr[4 * i + 1]) << 8) | (toInt(tmpColorPtr[4 * i + 2]) << 16);
+
+		//if (hostPixels[i] > 0) {
+		//	std::cerr << i <<" PIXEL: " << hostPixels[i] << " " << (toInt(tmpColorPtr[4 * i])) << " " << (toInt(tmpColorPtr[4 * i + 1])) << " " << (toInt(tmpColorPtr[4 * i + 2])) << std::endl;
+		//}
+	}
+
+	
+
 
 	// test
 
-	std::cerr << "Tmp Test Seed" << std::endl;
+//	std::cerr << "Tmp Test Seed" << std::endl;
 	//for (auto i = 0; i < width * height; ++i) {
 	//	std::cerr << "Host seed " << i << " x value:" <<hostSeeds[i] << std::endl;
 	//}
 
-	std::cerr << "Host seed " << 0 << " x value:" << hostSeeds[0] << std::endl;
-	std::cerr << "Host seed " << 1 << " x value:" << hostSeeds[1] << std::endl;
+//	std::cerr << "Host seed " << 0 << " x value:" << hostSeeds[0] << std::endl;
+//	std::cerr << "Host seed " << 1 << " x value:" << hostSeeds[1] << std::endl;
 
 
 }
@@ -1056,6 +1091,10 @@ void UpdateRendering() {
 			elapsedTime, currentSample, sampleSec / 1000.f);
 }
 
+
+void UpdateRenderingCm() {
+
+}
 
 void ReInitScene() {
 	currentSample = 0;
@@ -1118,18 +1157,16 @@ int main(int argc, char *argv[]) {
 
 	// set OpenGL pixel pointer here !
 
-	pixels = clPixels;
-	
+	//pixels = clPixels;
 
+	pixels = hostPixels;
+	
 	InitGlut(argc, argv, "OpenCL Ray Tracing Experiment");
 	
-
     glutMainLoop();
 
 
 	FreeOpenCLBuffers();
-
-
 
 	return 0;
 }
