@@ -470,7 +470,7 @@ _GENX_ void radiancePathTracing(SurfaceIndex spheresIndex, const unsigned kSpher
         if (refl == DIFF) {
             specularBounce = 0;
 
-            throughput = throughput *  hitSphere.select<3, 1>(7);           // s->c
+            throughput = throughput * hitSphere.select<3, 1>(7);           // s->c
 
             /* Direct lighting component */
 
@@ -537,11 +537,87 @@ _GENX_ void radiancePathTracing(SurfaceIndex spheresIndex, const unsigned kSpher
             currentRay.select<3, 1>(3) = newDir;
 
         } else if (refl == REFR) {
+            specularBounce = 1;
+
+            printf("REFR | depth: %u \n", depth);
+
+            // tmp !
+            //break;
+
+
+            vector<float, 3> newDir = (2 * vecDot(normal, currentRay.select<3, 1>(3))) * normal;
+            newDir = currentRay.select<3, 1>(3) - newDir;
+
+            CmRay reflRay; 
+            reflRay.select<3,1>(0) = hitpoint;  /* Ideal dielectric REFRACTION */
+            reflRay.select<3, 1>(3) = newDir;
+
+            /* Ray from outside going in? */
+            bool isInto = (vecDot(normal, nl) > 0);
+
+
+            const float nc = 1.f;		// Index of Refraction (IOR) of vacuum
+			const float nt = 1.52f;	//Index of Refraction (IOR) for glass is 1.52 
+            float nnt = isInto ? nc / nt : nt / nc;
+            float ddn = vecDot(currentRay.select<3, 1>(3), nl);
+
+            // Note: currentRay.d and nl are unit vectors
+			// nc * Sin(c) = nt * Sin(t)
+            // Cos^2(t) = 1 - Sin^2(t) = 1 - (nnt)^2 * (1 - Cos^2(c))
+            
+
+            float cos2t = 1.f - nnt * nnt * (1.f - ddn * ddn);
+
+            if (cos2t < 0.f)  { /* Total internal reflection */
+				throughput = throughput * hitSphere.select<3, 1>(7);
+
+				currentRay = reflRay; // if the angle is too shallow, all the light is reflected
+				continue;
+            }
+            
+            // refraction ray equation
+            float kk = (isInto ? 1 : -1) * (ddn * nnt + cm_sqrt(cos2t));
+            vector<float, 3> nkk = kk * normal;
+            vector<float, 3> transDir = nnt *  currentRay.select<3, 1>(3);
+            transDir = transDir - nkk;
+
+            normalize(transDir);
+
+            // Fresnel Reflectance
+			float a = nt - nc;
+			float b = nt + nc;
+            float R0 = a * a / (b * b);
+            float c = 1 - (isInto ? -ddn : vecDot(transDir, normal));	// 1 - cos
+
+            float Re = R0 + (1 - R0) * c * c * c * c * c; // Reflectance
+			float Tr = 1.f - Re;
+            float P = 0.25f + 0.5f * Re;		// probability of reflecting
+            
+            float RP = Re / P;
+            float TP = Tr / (1.f - P);
+            
+            if (getRandom(seeds) < P) { // Choose one !
+				throughput = RP * throughput;
+				throughput = throughput * hitSphere.select<3, 1>(7);
+
+				currentRay = reflRay;	//reflect
+				continue;
+			} else {
+				throughput = TP * throughput;
+				throughput = throughput * hitSphere.select<3, 1>(7);
+                
+                currentRay.select<3, 1>(0) = hitpoint;
+                currentRay.select<3, 1>(3) = transDir;  // refract
+
+				continue;
+			}
 
 
 
         } else {
             // Error here
+
+            printf("Error !!!! \n");
         }
 
     }
