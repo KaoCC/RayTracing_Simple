@@ -136,12 +136,12 @@ static void SetupCmDefaultScene() {
 	// Sphere: float + Vec * 3 + enum --> 1 + 3 * 3 + 1  --> 11 float 
 	// padding for alignment: + 1 to 12 float --> 12 * sizeof(float) = 48 (OWORD align)
 
-	const unsigned SphereFloatCount = 1 + 3 * 3 + 1 + 1;
+	const unsigned kSphereFloatCount = 1 + 3 * 3 + 1 + 1;
 
-	hostSpheres = reinterpret_cast<Sphere*>(new float[SphereFloatCount * defaultSphereCount]);		// leak
+	hostSpheres = reinterpret_cast<Sphere*>(new float[kSphereFloatCount * defaultSphereCount]);		// leak
 
 	// Sphere buffer
-	pCmDev->CreateBuffer(sizeof(float) * SphereFloatCount * defaultSphereCount, spheresBuffer);
+	pCmDev->CreateBuffer(sizeof(float) * kSphereFloatCount * defaultSphereCount, spheresBuffer);
 
 
 	// assign Sphere value 
