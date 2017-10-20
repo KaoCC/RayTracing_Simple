@@ -1097,7 +1097,19 @@ void UpdateRendering() {
 
 
 void UpdateRenderingCm() {
+	double startTime = WallClockTime();
+	int startSampleCount = currentSample;
 
+
+	ExecuteCmKernel();
+	++currentSample;
+
+
+	const double elapsedTime = WallClockTime() - startTime;
+	const int samples = currentSample - startSampleCount;
+	const double sampleSec = samples * height * width / elapsedTime;
+	sprintf(captionBuffer, "Rendering time %.3f sec (pass %d)  Sample/sec  %.1fK\n",
+		elapsedTime, currentSample, sampleSec / 1000.f);
 }
 
 void ReInitScene() {

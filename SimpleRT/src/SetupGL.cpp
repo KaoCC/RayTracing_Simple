@@ -16,6 +16,9 @@ extern void ReInitScene();
 extern void UpdateRendering();
 extern void UpdateCamera(Camera* pCamera);
 
+
+extern void UpdateRenderingCm();
+
 //extern Camera camera;
 extern Camera* cameraPtr;
 extern Sphere *spheres;
