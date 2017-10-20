@@ -95,13 +95,15 @@ CmBuffer* pixelBuffer;
 std::unique_ptr<CmSVMAllocator> pCmAllocator;
 
 
-const unsigned int kThreadWidth = 10;
-const unsigned int kThreadheight = 10;
+const unsigned int kThreadWidth = 20;
+const unsigned int kThreadheight = 20;
 CmThreadSpace* kernelThreadspace;
 
 CmTask* pCmTask;
 
 CmEvent* pCmEvent = nullptr;
+
+static unsigned sampleCountCm = 0;
 
 
 // --------------
