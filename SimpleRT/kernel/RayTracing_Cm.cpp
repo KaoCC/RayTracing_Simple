@@ -718,7 +718,7 @@ RayTracing(SurfaceIndex cameraIndex, SurfaceIndex seedIndex, SurfaceIndex colorI
         read(seedIndex,  seedOffset , seedIn);
 
 
-        vector<unsigned, 2> seedFinal = seedIn.select<2, 1>(localIndex);
+        vector_ref<unsigned, 2> seedFinal = seedIn.select<2, 1>(localIndex);
 
         CmRay ray;
         generateCameraRay(camera, seedFinal, width, height, iNum % width,  iNum / width, ray);        // check x, y
@@ -740,7 +740,7 @@ RayTracing(SurfaceIndex cameraIndex, SurfaceIndex seedIndex, SurfaceIndex colorI
         
     
         // TMP
-        const unsigned currentSample = 0;       // Eventually it should be written from host
+        const unsigned currentSample = 1;       // Eventually it should be written from host
         const float k1 = currentSample;
         const float k2 = 1.f / (currentSample + 1.f);
     
@@ -753,6 +753,14 @@ RayTracing(SurfaceIndex cameraIndex, SurfaceIndex seedIndex, SurfaceIndex colorI
         //printf("(%d, %d) write color: %f %f %f %f\n", x , y, color[0], color[1], color[2], color[3]);
     
         write(colorIndex, colorOffset, color);        
+
+
+        // missing : write back the seeds ...
+
+
+        // not optimized ...
+        write(seedIndex,  seedOffset , seedIn);
+
 
     }
 
