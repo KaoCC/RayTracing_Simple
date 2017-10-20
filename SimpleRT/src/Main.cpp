@@ -1007,8 +1007,10 @@ static void ExecuteCmKernel() {
 	std::cout << std::endl;
 
 
-	// tmp, we do not need to read back seed
-//	seedsBuffer->ReadSurface(reinterpret_cast<unsigned char*>(hostSeeds), pCmEvent);
+
+	seedsBuffer->ReadSurface(reinterpret_cast<unsigned char*>(hostSeeds), pCmEvent);
+
+	pCmEvent->WaitForTaskFinished();
 
 	colorBuffer->ReadSurface(reinterpret_cast<unsigned char*>(hostColor), pCmEvent);
 
