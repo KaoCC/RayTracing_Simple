@@ -637,7 +637,7 @@ _GENX_ void radiancePathTracing(SurfaceIndex spheresIndex, const unsigned kSpher
 //constexpr const unsigned seedOffset = sizeof(unsigned) * 2;
 
 _GENX_MAIN_ void
-RayTracing(SurfaceIndex cameraIndex, SurfaceIndex seedIndex, SurfaceIndex colorIndex, SurfaceIndex spheresIndex, unsigned sphereCount) {
+RayTracing(SurfaceIndex cameraIndex, SurfaceIndex seedIndex, SurfaceIndex colorIndex, SurfaceIndex spheresIndex, unsigned sphereCount, unsigned inputSampleCount) {
     
     int x = get_thread_origin_x();
     int y = get_thread_origin_y();
@@ -740,7 +740,7 @@ RayTracing(SurfaceIndex cameraIndex, SurfaceIndex seedIndex, SurfaceIndex colorI
         
     
         // TMP
-        const unsigned currentSample = 1;       // Eventually it should be written from host
+        const unsigned currentSample = inputSampleCount;       // Eventually it should be written from host
         const float k1 = currentSample;
         const float k2 = 1.f / (currentSample + 1.f);
     

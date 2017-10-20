@@ -103,7 +103,7 @@ CmTask* pCmTask;
 
 CmEvent* pCmEvent = nullptr;
 
-static unsigned sampleCountCm = 0;
+static CmKernel* cmKernel = nullptr;
 
 
 // --------------
@@ -862,7 +862,7 @@ static void SetupCM() {
 
 
 	// Create Kernel
-	CmKernel* cmKernel = nullptr;
+	// CmKernel* cmKernel = nullptr;
 	result = pCmDev->CreateKernel(cmProgram, CM_KERNEL_FUNCTION(RayTracing), cmKernel);
 	if (result != CM_SUCCESS) {
 		perror ("LoadProgram error");
@@ -1100,6 +1100,9 @@ void UpdateRenderingCm() {
 	double startTime = WallClockTime();
 	int startSampleCount = currentSample;
 
+
+	// tmp
+	cmKernel->SetKernelArg(5 , sizeof(unsigned), &currentSample);
 
 	ExecuteCmKernel();
 	++currentSample;
