@@ -48,13 +48,13 @@ constexpr const unsigned rayVecSize = 6;
 constexpr const unsigned kColorFloatcount = 4;
 
 // not used, for reference only
-struct Camera {
+//struct Camera {
 
 	/* User defined values */
-	Vec orig, target;
+//	Vec orig, target;
     /* Calculated values */
-    Vec dir, x, y;
-};
+//    Vec dir, x, y;
+//};
 
 // not used, for refernce only
 /*struct Sphere {
