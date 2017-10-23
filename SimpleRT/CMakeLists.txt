@@ -61,6 +61,16 @@ add_custom_command(
    )
 
 
+
+add_custom_command(
+    TARGET SimpleRT PRE_BUILD
+    COMMAND ${GENX_CC} ARGS -c -Qxcm -mCM_emit_common_isa ${RT_DIR}/kernel/RayTracing_Cm_SVM.cpp
+    WORKING_DIRECTORY ${CMAKE_BINARY_DIR}/bin/${CMAKE_CFG_INTDIR}
+    COMMENT "Compiling genx CM SVM kernel definitions source file ${RT_DIR}/kernel/RayTracing_Cm_SVM.cpp"
+    #VERBATIM
+)   
+
+
 #add_custom_command(
 #    TARGET SimpleRT PRE_BUILD
 #    COMMAND ${CM_ENV_SCRIPT} ARGS x64 gen9
