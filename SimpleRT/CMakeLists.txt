@@ -24,12 +24,14 @@ add_executable(
     ./include/Utility.hpp
     ./include/Vec.hpp
     ./include/CmSVMAllocator.hpp
+    ./include/CmConfig.hpp
 
     ./src/Main.cpp
     ./src/SetupGL.cpp
     ./src/Utility.cpp
     ./src/Vec.cpp
     ./src/CmSVMAllocator.cpp
+    ./src/CmConfig.cpp
     ./src/Scene.cpp
 )
 

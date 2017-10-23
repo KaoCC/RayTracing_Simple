@@ -142,10 +142,19 @@ int viszero(const  Vec *v)
 // http://en.wikipedia.org/wiki/Random_number_generator
 float GetRandom(unsigned int *seed0, unsigned int *seed1) 
 {
-	*seed0 = 36969 * ((*seed0) & 65535) + ((*seed0) >> 16);
-	*seed1 = 18000 * ((*seed1) & 65535) + ((*seed1) >> 16);
+
+	unsigned s0 = *seed0;
+	unsigned s1 = *seed1;
+
+//	printf("CL  seed 0,1: %u, %u\n", s0, s1);
+
+	*seed0 = 36969 * ((s0) & 65535) + ((s0) >> 16);
+	*seed1 = 18000 * ((s1) & 65535) + ((s1) >> 16);
+
 
 	unsigned int ires = ((*seed0) << 16) + (*seed1);
+
+//	printf("CL seed 0,1: %u, %u  ires: %u\n", s0, s1, ires);
 
 	/* Convert to float */
 	union {
@@ -153,6 +162,8 @@ float GetRandom(unsigned int *seed0, unsigned int *seed1)
 		unsigned int ui;
 	} res;
 	res.ui = (ires & 0x007fffff) | 0x40000000;
+
+//	printf("CL seed 0,1: %u, %u  ires: %u  RET: %f\n", s0, s1, ires, (res.f - 2.f) / 2.f);
 
 	return (res.f - 2.f) / 2.f;
 }
@@ -328,6 +339,9 @@ static void RadiancePathTracing( OCL_CONSTANT_BUFFER const Sphere *spheres, cons
 		vsmul(&hitPoint, t, &currentRay.d);
 		vadd(&hitPoint, &currentRay.o, &hitPoint);
 
+
+		//printf("Hit!! %f %f %f\n", hitPoint.x, hitPoint.y, hitPoint.z);
+
 		Vec normal;
 		vsub(&normal, &hitPoint, &obj->p);
 		vnorm(&normal);
@@ -362,6 +376,8 @@ static void RadiancePathTracing( OCL_CONSTANT_BUFFER const Sphere *spheres, cons
 			SampleLights(spheres, sphereCount, seed0, seed1, &hitPoint, &nl, &Ld);
 			vmul(&Ld, &throughput, &Ld);
 			vadd(&rad, &rad, &Ld);
+
+			//printf("rad: %f %f %f\n", rad.x, rad.y, rad.z);
 
 			/* Diffuse component */
 			float r1 = 2.f * FLOAT_PI * GetRandom(seed0, seed1);	// Random angle
@@ -479,6 +495,11 @@ static void GenerateCameraRay(OCL_CONSTANT_BUFFER Camera *camera_,
 		unsigned int *seed0, unsigned int *seed1,
 		const int width, const int height, const int x, const int y, Ray *ray) 
 {
+
+	/*if (x == 0 && y ==0) {
+		printf("OPENCL: x == 0 seed before: %d\n", *seed0);
+	}*/
+
 	const float invWidth = 1.f / width;
 	const float invHeight = 1.f / height;
 	const float r1 = GetRandom(seed0, seed1) - 0.5f;
@@ -486,9 +507,21 @@ static void GenerateCameraRay(OCL_CONSTANT_BUFFER Camera *camera_,
 	const float kcx = (x + r1) * invWidth - 0.5f;
 	const float kcy = (y + r2) * invHeight - 0.5f;
 
+
+	/*if (x == 0 && y == 0) {
+        printf("OpenCL seed0 seed1 r1, r2: %u %u %f, %f | %f, %f\n", *seed0, *seed1 ,r1 , r2, kcx, kcy);
+		printf("OPENCL: x == 0 seed after: %d\n", *seed0);
+	}*/
+
+
 	/*local variables*/
 	Camera _camera = *camera_;
 	const Camera *camera = &_camera;
+
+
+	/*if (x == 0 && y == 0) {
+		printf("Cam x.x : %f\n", camera->x.x);
+	}*/
 
 	Vec rdir;
 	vinit(&rdir,
@@ -496,12 +529,23 @@ static void GenerateCameraRay(OCL_CONSTANT_BUFFER Camera *camera_,
 			camera->x.y * kcx + camera->y.y * kcy + camera->dir.y,
 			camera->x.z * kcx + camera->y.z * kcy + camera->dir.z);
 
+
+	/*if (x == 0 && y == 0) {
+		printf("rdir: x %f %f %f\n", rdir.x, rdir.y, rdir.z);
+	}*/
+
 	Vec rorig;
 	vsmul(&rorig, 0.1f, &rdir);
 	vadd(&rorig, &rorig, &camera->orig);
 
 	vnorm(&rdir);
 	rinit(*ray, rorig, rdir);
+
+
+	/*if (x == 0 && y == 0) {
+		printf("OPENCL: ray: %f %f %f | %f %f %f\n", ray->o.x, ray->o.y, ray->o.z, ray->d.x, ray->d.y, ray->d.z);
+	}*/
+
 }
 
 __kernel void RayTracing(
@@ -543,6 +587,8 @@ __kernel void RayTracing(
 		colors[i].y = (colors[i].y * k1  + r.y) * k2;
 		colors[i].z = (colors[i].z * k1  + r.z) * k2;
 	}
+
+	//printf("color: %f %f %f\n", colors[i].x, colors[i].y, colors[i].z);
 
 	// result
 	pixels[y * width + x] = toInt(colors[i].x) |

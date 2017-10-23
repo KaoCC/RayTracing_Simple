@@ -429,7 +429,7 @@ _GENX_ void radiancePathTracing(SurfaceIndex spheresIndex, const unsigned kSpher
         unsigned hitID = intersectResult[1];
         unsigned hitSphereOffset = kSphereClassFloatcount * sizeof(float) * hitID;
 
-        printf("Hit!! %f %f %f, ID: %u, depth: %u\n", hitpoint[0], hitpoint[1], hitpoint[2], hitID, depth);
+        //printf("Hit!! %f %f %f, ID: %u, depth: %u\n", hitpoint[0], hitpoint[1], hitpoint[2], hitID, depth);
 
         CmSphere hitSphere;
         read(spheresIndex, hitSphereOffset, hitSphere);
@@ -485,7 +485,7 @@ _GENX_ void radiancePathTracing(SurfaceIndex spheresIndex, const unsigned kSpher
             rad = rad + Ld;
 
             // test
-            printf("DIFF rad: %f %f %f | ID: %u, depth: %u\n", rad[0], rad[1], rad[2], hitID, depth);
+            //printf("DIFF rad: %f %f %f | ID: %u, depth: %u\n", rad[0], rad[1], rad[2], hitID, depth);
 
             /* Diffuse component */
             float r1 = 2.f * FLOAT_PI * getRandom(seeds);	// Random angle
@@ -529,7 +529,7 @@ _GENX_ void radiancePathTracing(SurfaceIndex spheresIndex, const unsigned kSpher
         } else if (refl == SPEC) {
             specularBounce = 1;
 
-            printf("SPEC | depth: %u \n", depth);
+            //printf("SPEC | depth: %u \n", depth);
 
             // R = D - 2(Nornal dot D)Normal
             vector<float, 3> newDir = (2 * vecDot(normal, currentRay.select<3, 1>(3))) * normal;
@@ -544,7 +544,7 @@ _GENX_ void radiancePathTracing(SurfaceIndex spheresIndex, const unsigned kSpher
         } else if (refl == REFR) {
             specularBounce = 1;
 
-            printf("REFR | depth: %u \n", depth);
+            //printf("REFR | depth: %u \n", depth);
 
             // tmp !
             //break;
@@ -554,7 +554,7 @@ _GENX_ void radiancePathTracing(SurfaceIndex spheresIndex, const unsigned kSpher
             newDir = currentRay.select<3, 1>(3) - newDir;
 
             CmRay reflRay; 
-            reflRay.select<3,1>(0) = hitpoint;  /* Ideal dielectric REFRACTION */
+            reflRay.select<3, 1>(0) = hitpoint;  /* Ideal dielectric REFRACTION */
             reflRay.select<3, 1>(3) = newDir;
 
             /* Ray from outside going in? */
@@ -702,7 +702,7 @@ RayTracing(SurfaceIndex cameraIndex, SurfaceIndex seedIndex, SurfaceIndex colorI
 
     
     // test
-    printf("x, y : (%u, %u) Upper left pixel number (id): %u\n", x , y,  upperLeftPixelNumber);
+    //printf("x, y : (%u, %u) Upper left pixel number (id): %u\n", x , y,  upperLeftPixelNumber);
 
 
     for (unsigned iNum = upperLeftPixelNumber; iNum < lowerRightPixelBound; ++iNum) {
@@ -744,11 +744,13 @@ RayTracing(SurfaceIndex cameraIndex, SurfaceIndex seedIndex, SurfaceIndex colorI
         const float k1 = currentSample;
         const float k2 = 1.f / (currentSample + 1.f);
     
-        color.select<3,1>(0) = (color.select<3,1>(0) * k1 + result) * k2;
+        color.select<3,1>(0) = ((color.select<3,1>(0) * k1) + result) * k2;
     
         // test only
         color[3] = -1;
     
+
+        //printf("current sample: %u\n", currentSample);
     
         //printf("(%d, %d) write color: %f %f %f %f\n", x , y, color[0], color[1], color[2], color[3]);
     
