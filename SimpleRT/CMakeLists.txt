@@ -23,6 +23,7 @@ add_executable(
     ./src/SetupGL.cpp
     ./src/Utility.cpp
     ./src/Vec.cpp
+    ./src/Scene.cpp
 )
 
 
