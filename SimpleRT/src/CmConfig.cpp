@@ -46,13 +46,13 @@ static CmQueue* pCmQueue;
 static const std::string isaFileName = "RayTracing_Cm.isa";
 
 // host arrays
-static unsigned int* hostSeeds;
+static unsigned* hostSeeds;
 static Vec* hostColor;
 Camera* hostCamera;
 Sphere* hostSpheres;
 Sphere* defaultSpheres;
 unsigned  defaultSphereCount = 0;
-unsigned int* hostPixels;
+unsigned* hostPixels;
 
 // Cm buffers
 
@@ -66,8 +66,8 @@ CmBuffer* pixelBuffer;
 std::unique_ptr<CmSVMAllocator> pCmAllocator;
 
 
-const unsigned int kThreadWidth = 20;
-const unsigned int kThreadheight = 20;
+const unsigned kThreadWidth = 20;
+const unsigned kThreadheight = 20;
 CmThreadSpace* kernelThreadspace;
 
 CmTask* pCmTask;
@@ -79,6 +79,21 @@ static CmKernel* cmKernel = nullptr;
 
 static unsigned currentSampleCount = 0;
 
+
+
+static bool useCmSVM = false;
+
+
+// Sphere: float + Vec * 3 + enum --> 1 + 3 * 3 + 1  --> 11 float 
+// padding for alignment: + 1 to 12 float --> 12 * sizeof(float) = 48 (OWORD align)
+constexpr const unsigned kSphereFloatCount = 1 + 3 * 3 + 1 + 1;
+
+// Vec orig, target (3 + 3) Vec dir, x, y (3 + 3 + 3)
+constexpr const unsigned kCmCamerafloatCount = 3 + 3 + 3 + 3 + 3;
+
+// add padding for alignmen issue
+constexpr const unsigned kColorFloatCount = 3 + 1;	// Vec(3) + 1 float padding
+
 // --------------
 
 // tmp
@@ -87,16 +102,14 @@ void SetupCmDefaultScene() {
 	defaultSpheres = DemoSpheres;
 	defaultSphereCount = sizeof(DemoSpheres) / sizeof(Sphere);
 
+	if (useCmSVM) {
+		hostSpheres = static_cast<Sphere*>(pCmAllocator->allocate(sizeof(float) * kSphereFloatCount * defaultSphereCount));
+	} else {
 
-	// Sphere: float + Vec * 3 + enum --> 1 + 3 * 3 + 1  --> 11 float 
-	// padding for alignment: + 1 to 12 float --> 12 * sizeof(float) = 48 (OWORD align)
+		hostSpheres = reinterpret_cast<Sphere*>(new float[kSphereFloatCount * defaultSphereCount]);		// leak
+		pCmDev->CreateBuffer(sizeof(float) * kSphereFloatCount * defaultSphereCount, spheresBuffer); // Sphere buffer
 
-	const unsigned kSphereFloatCount = 1 + 3 * 3 + 1 + 1;
-
-	hostSpheres = reinterpret_cast<Sphere*>(new float[kSphereFloatCount * defaultSphereCount]);		// leak
-
-																									// Sphere buffer
-	pCmDev->CreateBuffer(sizeof(float) * kSphereFloatCount * defaultSphereCount, spheresBuffer);
+	}
 
 
 	// assign Sphere value 
@@ -159,28 +172,72 @@ void AllocateCmBuffers() {
 	const int pixelCount = width * height;
 
 
-
 	// SVM allocator
-	//pCmAllocator = std::make_unique<CmSVMAllocator>(pCmDev);
+
+	if (useCmSVM) {
+
+		pCmAllocator = std::make_unique<CmSVMAllocator>(pCmDev);
+
+		// camera
+		hostCamera = static_cast<Camera*>(pCmAllocator->allocate(sizeof(float) * (kCmCamerafloatCount)));
+
+		// seed 
+		hostSeeds = static_cast<unsigned*>(pCmAllocator->allocate(sizeof(unsigned) * (pixelCount * 2)));
+
+		// color
+		hostColor = static_cast<Vec*>(pCmAllocator->allocate(sizeof(float) * kColorFloatCount * pixelCount));
+
+		// pixel
+		hostPixels = static_cast<unsigned*>(pCmAllocator->allocate(sizeof(unsigned) * pixelCount));
+
+	} else {
+		// should change to smart pointer later.
 
 
-	// should change to smart pointer later.
-
-	// Camera
-	//hostCamera = new Camera();
-	//pCmDev->CreateBuffer(sizeof(Camera), cameraBuffer);
-
-	// bad design, for testing only   	// Vec orig, target (3 + 3) Vec dir, x, y (3 + 3 + 3)
-	hostCamera = reinterpret_cast<Camera*>(new float[3 + 3 + 3 + 3 + 3]);
-	pCmDev->CreateBuffer(sizeof(float) * (3 + 3 + 3 + 3 + 3), cameraBuffer);
+		// bad design, for testing only   	// Vec orig, target (3 + 3) Vec dir, x, y (3 + 3 + 3)
+		hostCamera = reinterpret_cast<Camera*>(new float[kCmCamerafloatCount]);
+		pCmDev->CreateBuffer(sizeof(float) * (kCmCamerafloatCount), cameraBuffer);
 
 
-	// TEST, use SVM
-	//hostCamera = static_cast<Camera*>(pCmAllocator->allocate(sizeof(Camera)));
+		// TEST, use SVM
+		//hostCamera = static_cast<Camera*>(pCmAllocator->allocate(sizeof(Camera)));
+
+		// seed
+		hostSeeds = new unsigned[pixelCount * 2];
 
 
-	// seed
-	hostSeeds = new unsigned int[pixelCount * 2];
+		// test
+
+		//std::cerr << "SEED TEST\n";
+		//for (int i = 0; i < 8; ++i) {
+		//	std::cerr << hostSeeds[i] << std::endl;
+		//}
+
+		//std::cerr << "hostSeed 160: " << hostSeeds[160] << std::endl;
+
+		//std::cerr << "END SEED TEST\n";
+
+		pCmDev->CreateBuffer(sizeof(unsigned int) * pixelCount * 2, seedsBuffer);
+
+		// pixels
+		pCmDev->CreateBuffer(sizeof(unsigned int) * pixelCount, pixelBuffer);
+
+		// bad design, for testing only
+		// Vec 3
+
+
+		hostColor = reinterpret_cast<Vec*>(new float[kColorFloatCount * pixelCount]);
+		pCmDev->CreateBuffer(sizeof(float) * kColorFloatCount * pixelCount, colorBuffer);
+
+
+		hostPixels = new unsigned[pixelCount];
+
+	}
+
+	
+	//  ---- init part ---- 
+
+	// seeds
 	for (int i = 0; i < pixelCount * 2; ++i) {
 		//hostSeeds[i] = std::rand();
 
@@ -191,59 +248,18 @@ void AllocateCmBuffers() {
 			hostSeeds[i] = 2;
 	}
 
-	// test
-
-	//std::cerr << "SEED TEST\n";
-	//for (int i = 0; i < 8; ++i) {
-	//	std::cerr << hostSeeds[i] << std::endl;
-	//}
-
-	//std::cerr << "hostSeed 160: " << hostSeeds[160] << std::endl;
-
-	//std::cerr << "END SEED TEST\n";
-
-
-
-	pCmDev->CreateBuffer(sizeof(unsigned int) * pixelCount * 2, seedsBuffer);
-
-
-
-	// pixels 
-#pragma message ( "Check the pixel host buffer ! (AllocateCmBuffers)" )
-
-
-	pCmDev->CreateBuffer(sizeof(unsigned int) * pixelCount, pixelBuffer);
-
 
 	// color
-	//hostColor = new Vec[pixelCount];
-	//pCmDev->CreateBuffer(sizeof(Vec) * pixelCount, colorBuffer);
-
-
-	// bad design, for testing only
-	// Vec 3
-
-	// add padding for alignmen issue
-	const unsigned kColorFloatCount = 3 + 1;	// Vec(3) + 1 float padding
-
-	hostColor = reinterpret_cast<Vec*>(new float[kColorFloatCount * pixelCount]);
-	pCmDev->CreateBuffer(sizeof(float) * kColorFloatCount * pixelCount, colorBuffer);
-
-	// tmp init to zero, should be changed later 
 	float* tmpColor = (float*)hostColor;
 	for (int i = 0; i < kColorFloatCount * pixelCount; ++i) {
 		tmpColor[i] = 0;
 	}
 
-	hostPixels = new unsigned[pixelCount];
 
-	// tmp disable 
-	//pCmDev->CreateBuffer(sizeof(unsigned) * pixelCount , pixelBuffer);
-
+	// pixel
 	for (int i = 0; i < pixelCount; ++i) {
 		hostPixels[i] = 0;
 	}
-
 
 }
 
