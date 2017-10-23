@@ -43,7 +43,10 @@ float clamp(float x, float low, float high) {
 static CmDevice* pCmDev;
 static CmQueue* pCmQueue;
 
-static const std::string isaFileName = "RayTracing_Cm.isa";
+
+static bool useCmSVM = true;
+
+static const std::string isaFileName = useCmSVM ? "RayTracing_Cm_SVM.isa" : "RayTracing_Cm.isa";
 
 // host arrays
 static unsigned* hostSeeds;
@@ -81,7 +84,6 @@ static unsigned currentSampleCount = 0;
 
 
 
-static bool useCmSVM = false;
 
 
 // Sphere: float + Vec * 3 + enum --> 1 + 3 * 3 + 1  --> 11 float 
@@ -312,48 +314,45 @@ void SetupCM() {
 	// test !
 	SetupCmDefaultScene();
 
-	// get index 
-	// 
-	SurfaceIndex* cameraIndex;
-	SurfaceIndex* seedsIndex;
-	SurfaceIndex* colorIndex;
-	SurfaceIndex* spheresIndex;
-	SurfaceIndex* pixelIndex;
+	if (useCmSVM) {
 
-	cameraBuffer->GetIndex(cameraIndex);
-	seedsBuffer->GetIndex(seedsIndex);
-	colorBuffer->GetIndex(colorIndex);
-	spheresBuffer->GetIndex(spheresIndex);
-	pixelBuffer->GetIndex(pixelIndex);
+		int kernelArgIndex = 0;
+
+		std::cerr << "sizeof ptr:" << sizeof(void*) << std::endl;
+
+		result = cmKernel->SetKernelArg(kernelArgIndex++, sizeof(void*), &hostCamera);
+		result = cmKernel->SetKernelArg(kernelArgIndex++, sizeof(void*), &hostSeeds);
+		result = cmKernel->SetKernelArg(kernelArgIndex++, sizeof(void*), &hostColor);
+		result = cmKernel->SetKernelArg(kernelArgIndex++, sizeof(void*), &hostSpheres);
+		result = cmKernel->SetKernelArg(kernelArgIndex++, sizeof(unsigned), &defaultSphereCount);
+
+	} else {
+
+		// get index 
+		// 
+		SurfaceIndex* cameraIndex;
+		SurfaceIndex* seedsIndex;
+		SurfaceIndex* colorIndex;
+		SurfaceIndex* spheresIndex;
+		SurfaceIndex* pixelIndex;
+
+		cameraBuffer->GetIndex(cameraIndex);
+		seedsBuffer->GetIndex(seedsIndex);
+		colorBuffer->GetIndex(colorIndex);
+		spheresBuffer->GetIndex(spheresIndex);
+		pixelBuffer->GetIndex(pixelIndex);
 
 
-	// Set Kernel Args (tmp)
+		// Set Kernel Args (tmp)
 
-	// check the values !
-	//cmKernel->SetKernelArg(0, sizeof(SurfaceIndex), cameraIndex);
+		int kernelArgIndex = 0;
 
-	// TEST !!!
-	//hostCamera->orig.x = 100.123;
-	//hostCamera->orig.y = 456.789;
-	//hostCamera->orig.z = 258.456;
-
-	//hostCamera->dir.x = 100.123;
-	//hostCamera->dir.y = 456.789;
-	//hostCamera->dir.z = 258.456;
-
-	// --- TEST ----
-	//float* tmpCam = (float*)hostCamera;
-	//tmpCam[0] = 1; tmpCam[1] = 2; tmpCam[2] = 3; 
-	//tmpCam[3] = 4; tmpCam[4] = 5; tmpCam[5] = 6;
-	//tmpCam[6] = 7; tmpCam[7] = 8; tmpCam[8] = 9;
-	// --- END OF TEST ---
-
-	int kernelArgIndex = 0;
-	result = cmKernel->SetKernelArg(kernelArgIndex++, sizeof(SurfaceIndex), cameraIndex);
-	result = cmKernel->SetKernelArg(kernelArgIndex++, sizeof(SurfaceIndex), seedsIndex);
-	result = cmKernel->SetKernelArg(kernelArgIndex++, sizeof(SurfaceIndex), colorIndex);
-	result = cmKernel->SetKernelArg(kernelArgIndex++, sizeof(SurfaceIndex), spheresIndex);
-	result = cmKernel->SetKernelArg(kernelArgIndex++, sizeof(unsigned), &defaultSphereCount);
+		result = cmKernel->SetKernelArg(kernelArgIndex++, sizeof(SurfaceIndex), cameraIndex);
+		result = cmKernel->SetKernelArg(kernelArgIndex++, sizeof(SurfaceIndex), seedsIndex);
+		result = cmKernel->SetKernelArg(kernelArgIndex++, sizeof(SurfaceIndex), colorIndex);
+		result = cmKernel->SetKernelArg(kernelArgIndex++, sizeof(SurfaceIndex), spheresIndex);
+		result = cmKernel->SetKernelArg(kernelArgIndex++, sizeof(unsigned), &defaultSphereCount);
+	}
 
 	//	cmKernel->SetKernelArg(2, sizeof(SurfaceIndex), pixelIndex);
 
@@ -387,10 +386,14 @@ void ExecuteCmKernel() {
 	//std::cerr << "before Host seed " << 0 << " x value:" << hostSeeds[0] << std::endl;
 	//std::cerr << "before Host seed " << 1 << " x value:" << hostSeeds[1] << std::endl;
 
-	cameraBuffer->WriteSurface(reinterpret_cast<unsigned char*>(hostCamera), nullptr);
-	seedsBuffer->WriteSurface(reinterpret_cast<unsigned char*>(hostSeeds), nullptr);
-	colorBuffer->WriteSurface(reinterpret_cast<unsigned char*>(hostColor), nullptr);
-	spheresBuffer->WriteSurface(reinterpret_cast<unsigned char*>(hostSpheres), nullptr);
+	if (!useCmSVM) {
+
+		cameraBuffer->WriteSurface(reinterpret_cast<unsigned char*>(hostCamera), nullptr);
+		seedsBuffer->WriteSurface(reinterpret_cast<unsigned char*>(hostSeeds), nullptr);
+		colorBuffer->WriteSurface(reinterpret_cast<unsigned char*>(hostColor), nullptr);
+		spheresBuffer->WriteSurface(reinterpret_cast<unsigned char*>(hostSpheres), nullptr);
+
+	}
 
 	// test printf
 	pCmDev->InitPrintBuffer();
@@ -411,14 +414,17 @@ void ExecuteCmKernel() {
 	std::cout << std::endl;
 
 
+	if (!useCmSVM) {
 
-	seedsBuffer->ReadSurface(reinterpret_cast<unsigned char*>(hostSeeds), pCmEvent);
+		seedsBuffer->ReadSurface(reinterpret_cast<unsigned char*>(hostSeeds), pCmEvent);
 
-	pCmEvent->WaitForTaskFinished();
+		pCmEvent->WaitForTaskFinished();
 
-	colorBuffer->ReadSurface(reinterpret_cast<unsigned char*>(hostColor), pCmEvent);
+		colorBuffer->ReadSurface(reinterpret_cast<unsigned char*>(hostColor), pCmEvent);
 
-	pCmEvent->WaitForTaskFinished();
+		pCmEvent->WaitForTaskFinished();
+
+	}
 
 	// tmp color test
 	float* tmpColorPtr = reinterpret_cast<float*>(hostColor);

@@ -54,7 +54,7 @@ $<TARGET_FILE_DIR:SimpleRT>/)
 
 add_custom_command(
     TARGET SimpleRT PRE_BUILD
-    COMMAND ${GENX_CC} ARGS -c -Qxcm -mCM_emit_common_isa ${RT_DIR}/kernel/RayTracing_Cm.cpp
+    COMMAND ${GENX_CC} ARGS -c -Qxcm -mCM_emit_common_isa /DCM_PTRSIZE=64 ${RT_DIR}/kernel/RayTracing_Cm.cpp
     WORKING_DIRECTORY ${CMAKE_BINARY_DIR}/bin/${CMAKE_CFG_INTDIR}
     COMMENT "Compiling genx CM kernel definitions source file ${RT_DIR}/kernel/RayTracing_Cm.cpp"
     #VERBATIM
@@ -64,7 +64,7 @@ add_custom_command(
 
 add_custom_command(
     TARGET SimpleRT PRE_BUILD
-    COMMAND ${GENX_CC} ARGS -c -Qxcm -mCM_emit_common_isa ${RT_DIR}/kernel/RayTracing_Cm_SVM.cpp
+    COMMAND ${GENX_CC} ARGS -c -Qxcm -mCM_emit_common_isa /DCM_PTRSIZE=64 ${RT_DIR}/kernel/RayTracing_Cm_SVM.cpp
     WORKING_DIRECTORY ${CMAKE_BINARY_DIR}/bin/${CMAKE_CFG_INTDIR}
     COMMENT "Compiling genx CM SVM kernel definitions source file ${RT_DIR}/kernel/RayTracing_Cm_SVM.cpp"
     #VERBATIM
