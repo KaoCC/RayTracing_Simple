@@ -40,7 +40,7 @@ constexpr const unsigned threadCountY = 20;
 
 
 constexpr const unsigned kSphereClassFloatcount =  12;       // padding
-constexpr const unsigned kCameraClassFloatcount =  15;       // check alignment
+constexpr const unsigned kCameraClassFloatcount =  15 + 1;       // change to 64 byte for alignment
 
 constexpr const unsigned cameraVecSize = kCameraClassFloatcount;
 constexpr const unsigned rayVecSize = 6;
@@ -243,18 +243,19 @@ _GENX_ float sphereIntersect(const CmSphere_ref sphere, const CmRay_ref ray) {
 // intersectResult: distance, sphere id
 
 // yet to be checked
-_GENX_ bool intersect(SurfaceIndex spheresIndex, const unsigned kSphereCount, const CmRay_ref currentRay, vector_ref<float, 2> intersectResult) {
+_GENX_ bool intersect(svmptr_t spheresSVMPtr, const unsigned kSphereCount, const CmRay_ref currentRay, vector_ref<float, 2> intersectResult) {
 
     float inf = intersectResult[0] = 1e20f;
 
     // test with all the spheres in the scene 
     for (unsigned i = 0; i < kSphereCount; ++i) {
 
-        // read from spheresIndex and pass to the function
+        // read from spheresSVMPtr and pass to the function
         unsigned sphereOffset = kSphereClassFloatcount * sizeof(float) * i;
 
         CmSphere sphere;
-        read(spheresIndex, sphereOffset, sphere);
+        cm_svm_block_read(spheresSVMPtr + sphereOffset, sphere.select<4, 1>(0));
+        cm_svm_block_read(spheresSVMPtr + sphereOffset + 4 * sizeof(float), sphere.select<4, 1>(4));
 
         // KAOCC: check the sphere information
 
@@ -270,7 +271,7 @@ _GENX_ bool intersect(SurfaceIndex spheresIndex, const unsigned kSphereCount, co
 }
 
 
-_GENX_ bool intersectP(SurfaceIndex spheresIndex, const unsigned kSphereCount, const CmRay_ref currentRay, const float maVal) {
+_GENX_ bool intersectP(svmptr_t spheresSVMPtr, const unsigned kSphereCount, const CmRay_ref currentRay, const float maVal) {
 
 
     for (unsigned i = 0 ; i < kSphereCount; ++i) {
@@ -279,7 +280,11 @@ _GENX_ bool intersectP(SurfaceIndex spheresIndex, const unsigned kSphereCount, c
         unsigned sphereOffset = kSphereClassFloatcount * sizeof(float) * i;
         
         CmSphere sphere;
-        read(spheresIndex, sphereOffset, sphere);
+        //cm_svm_block_read(spheresSVMPtr + sphereOffset, sphere);
+
+        cm_svm_block_read(spheresSVMPtr + sphereOffset, sphere.select<4, 1>(0));
+        cm_svm_block_read(spheresSVMPtr + sphereOffset + 4 * sizeof(float), sphere.select<4, 1>(4));
+
 
         const float d = sphereIntersect(sphere, currentRay);
 
@@ -311,7 +316,7 @@ _GENX_ vector<float, 3> uniformSampleSphere(const float u1, const float u2) {
     return result;
 }
 
-_GENX_ void sampleLights(SurfaceIndex spheresIndex, const unsigned kSphereCount, CmSeed_ref seeds,  const vector_ref<float, 3> hitPoint, const vector_ref<float, 3> normal, vector_ref<float, 3> result) {
+_GENX_ void sampleLights(svmptr_t spheresSVMPtr, const unsigned kSphereCount, CmSeed_ref seeds,  const vector_ref<float, 3> hitPoint, const vector_ref<float, 3> normal, vector_ref<float, 3> result) {
 
     // clear
     for (unsigned i = 0; i < 3; ++i) {
@@ -323,7 +328,12 @@ _GENX_ void sampleLights(SurfaceIndex spheresIndex, const unsigned kSphereCount,
         // read sphere
         unsigned lightOffset = kSphereClassFloatcount * sizeof(float) * i;
         CmSphere light;
-        read(spheresIndex, lightOffset, light);
+        //cm_svm_block_read(spheresSVMPtr + lightOffset, light);
+
+
+        cm_svm_block_read(spheresSVMPtr + lightOffset, light.select<4, 1>(0));
+        cm_svm_block_read(spheresSVMPtr + lightOffset + 4 * sizeof(float), light.select<4, 1>(4));
+
 
         if (!vecIsZero(light.select<3, 1>(4))) {
 
@@ -361,7 +371,7 @@ _GENX_ void sampleLights(SurfaceIndex spheresIndex, const unsigned kSphereCount,
             /* Check if the light is visible */
 
             const float wi = vecDot(shadowRay.select<3, 1>(3), normal);
-            if ((wi > 0.f) && (!intersectP(spheresIndex, kSphereCount, shadowRay, len - kEpsilon))) {       // note :  if wi <= 0, the hitpoint is on the back of the sphere
+            if ((wi > 0.f) && (!intersectP(spheresSVMPtr, kSphereCount, shadowRay, len - kEpsilon))) {       // note :  if wi <= 0, the hitpoint is on the back of the sphere
 
                 vector<float, 3> c = light.select<3, 1>(4);
                 const float s = (4.f * FLOAT_PI * light[0] * light[0]) * wi * wo / (len * len);
@@ -380,7 +390,7 @@ _GENX_ void sampleLights(SurfaceIndex spheresIndex, const unsigned kSphereCount,
 
 
 // single ray version
-_GENX_ void radiancePathTracing(SurfaceIndex spheresIndex, const unsigned kSphereCount, const CmRay_ref startRay, CmSeed_ref seeds, vector_ref<float, 3> result) {
+_GENX_ void radiancePathTracing(svmptr_t spheresSVMPtr, const unsigned kSphereCount, const CmRay_ref startRay, CmSeed_ref seeds, vector_ref<float, 3> result) {
 
 
     // current ray being processed
@@ -414,7 +424,7 @@ _GENX_ void radiancePathTracing(SurfaceIndex spheresIndex, const unsigned kSpher
         intersectResult[0] = 0.f;       /* distance to intersection */
         intersectResult[1] = -1;         /* id of intersected object */
 
-		if (!intersect(spheresIndex, kSphereCount, currentRay, intersectResult)) {
+		if (!intersect(spheresSVMPtr, kSphereCount, currentRay, intersectResult)) {
 			break;      /* if miss, break */
         }
         
@@ -432,7 +442,11 @@ _GENX_ void radiancePathTracing(SurfaceIndex spheresIndex, const unsigned kSpher
         //printf("Hit!! %f %f %f, ID: %u, depth: %u\n", hitpoint[0], hitpoint[1], hitpoint[2], hitID, depth);
 
         CmSphere hitSphere;
-        read(spheresIndex, hitSphereOffset, hitSphere);
+        //cm_svm_block_read(spheresSVMPtr + hitSphereOffset, hitSphere);
+
+
+        cm_svm_block_read(spheresSVMPtr + hitSphereOffset, hitSphere.select<4, 1>(0));
+        cm_svm_block_read(spheresSVMPtr + hitSphereOffset + 4 * sizeof(float), hitSphere.select<4, 1>(4));
 
         vector<float, 3> normal = hitpoint - hitSphere.select<3, 1>(1);
 
@@ -478,7 +492,7 @@ _GENX_ void radiancePathTracing(SurfaceIndex spheresIndex, const unsigned kSpher
 
 
             // KAOCC:  sample light
-            sampleLights(spheresIndex, kSphereCount, seeds, hitpoint, normal, Ld);
+            sampleLights(spheresSVMPtr, kSphereCount, seeds, hitpoint, normal, Ld);
 
 
             Ld = throughput * Ld;
@@ -637,7 +651,7 @@ _GENX_ void radiancePathTracing(SurfaceIndex spheresIndex, const unsigned kSpher
 //constexpr const unsigned seedOffset = sizeof(unsigned) * 2;
 
 _GENX_MAIN_ void
-RayTracing(SurfaceIndex cameraIndex, SurfaceIndex seedIndex, SurfaceIndex colorIndex, SurfaceIndex spheresIndex, unsigned sphereCount, unsigned inputSampleCount) {
+RayTracing(svmptr_t cameraSVMPtr, svmptr_t seedSVMPtr, svmptr_t colorSVMPtr, svmptr_t spheresSVMPtr, unsigned sphereCount, unsigned inputSampleCount) {
     
     int x = get_thread_origin_x();
     int y = get_thread_origin_y();
@@ -685,8 +699,8 @@ RayTracing(SurfaceIndex cameraIndex, SurfaceIndex seedIndex, SurfaceIndex colorI
     // Camera
     CmCamera camera;
         
-    read(cameraIndex, 0, camera);
-//    printf("cam : %f, %f, %f, %f, %f, %f, %f, %f, %f\n", camera(6), camera(7), camera(8), camera(9), camera(10), camera(11) ,camera(12), camera(13), camera(14));
+    cm_svm_block_read(cameraSVMPtr + 0, camera);
+    printf("cam : %f, %f, %f, %f, %f, %f, %f, %f, %f\n", camera(6), camera(7), camera(8), camera(9), camera(10), camera(11) ,camera(12), camera(13), camera(14));
 
 
     // W, H, 
@@ -715,7 +729,7 @@ RayTracing(SurfaceIndex cameraIndex, SurfaceIndex seedIndex, SurfaceIndex colorI
         const unsigned seedOffset = offsetStart * 4;
 
         vector<unsigned int, 4> seedIn;
-        read(seedIndex,  seedOffset , seedIn);
+        cm_svm_block_read(seedSVMPtr + seedOffset , seedIn);
 
 
         vector_ref<unsigned, 2> seedFinal = seedIn.select<2, 1>(localIndex);
@@ -724,7 +738,7 @@ RayTracing(SurfaceIndex cameraIndex, SurfaceIndex seedIndex, SurfaceIndex colorI
         generateCameraRay(camera, seedFinal, width, height, iNum % width,  iNum / width, ray);        // check x, y
     
         vector<float, 3> result;
-        radiancePathTracing(spheresIndex, sphereCount, ray, seedFinal, result); 
+        radiancePathTracing(spheresSVMPtr, sphereCount, ray, seedFinal, result); 
 
 
         unsigned currentColorNumber = iNum;
@@ -734,7 +748,7 @@ RayTracing(SurfaceIndex cameraIndex, SurfaceIndex seedIndex, SurfaceIndex colorI
         vector<float, kColorFloatcount> color;
     
         // read color ?
-        read(colorIndex, colorOffset, color);
+        cm_svm_block_read(colorSVMPtr + colorOffset, color);
     
         //printf("read color: %f %f %f %f\n", color[0], color[1], color[2], color[3]);
         
@@ -754,14 +768,14 @@ RayTracing(SurfaceIndex cameraIndex, SurfaceIndex seedIndex, SurfaceIndex colorI
     
         //printf("(%d, %d) write color: %f %f %f %f\n", x , y, color[0], color[1], color[2], color[3]);
     
-        write(colorIndex, colorOffset, color);        
+        cm_svm_block_write(colorSVMPtr + colorOffset, color);        
 
 
         // missing : write back the seeds ...
 
 
         // not optimized ...
-        write(seedIndex,  seedOffset , seedIn);
+        cm_svm_block_write(seedSVMPtr + seedOffset , seedIn);
 
 
     }
@@ -786,7 +800,7 @@ RayTracing(SurfaceIndex cameraIndex, SurfaceIndex seedIndex, SurfaceIndex colorI
     // KAOCC: Check offset !!!!!       It must be OWORD aligned !
 
     vector<unsigned int, 4> seedIn;
-    read(seedIndex,  seedOffset , seedIn);
+    read(seedSVMPtr,  seedOffset , seedIn);
 
     printf("firstSeedNumber: %u, Seed Offset: %u seedIn<4>: %u %u %u %u\n", firstSeedNumber, seedOffset, seedIn(0), seedIn(1), seedIn(2), seedIn(3));
 
@@ -794,7 +808,7 @@ RayTracing(SurfaceIndex cameraIndex, SurfaceIndex seedIndex, SurfaceIndex colorI
     // extra:
 
     //vector<unsigned int, 4> seedIn;
-//    read(seedIndex,  16 , seedIn);
+//    read(seedSVMPtr,  16 , seedIn);
 
 //    printf("Extra: firstSeedNumber: %u, Seed Offset: %u seedIn<4>: %u %u %u %u\n", 4, 4 * 16, seedIn(0), seedIn(1), seedIn(2), seedIn(3));
 
@@ -805,7 +819,7 @@ RayTracing(SurfaceIndex cameraIndex, SurfaceIndex seedIndex, SurfaceIndex colorI
     generateCameraRay(camera, seedFinal, width, height, x,  y, ray);
 
     vector<float, 3> result;
-    radiancePathTracing(spheresIndex, sphereCount, ray, seedFinal, result); 
+    radiancePathTracing(spheresSVMPtr, sphereCount, ray, seedFinal, result); 
 
 
 
@@ -822,7 +836,7 @@ RayTracing(SurfaceIndex cameraIndex, SurfaceIndex seedIndex, SurfaceIndex colorI
     vector<float, kColorFloatcount> color;
 
     // read color ?
-    read(colorIndex, colorOffset, color);
+    read(colorSVMPtr, colorOffset, color);
 
     //printf("read color: %f %f %f %f\n", color[0], color[1], color[2], color[3]);
     
@@ -840,7 +854,7 @@ RayTracing(SurfaceIndex cameraIndex, SurfaceIndex seedIndex, SurfaceIndex colorI
 
     //printf("(%d, %d) write color: %f %f %f %f\n", x , y, color[0], color[1], color[2], color[3]);
 
-    write(colorIndex, colorOffset, color);
+    write(colorSVMPtr, colorOffset, color);
 
 
 */
@@ -865,7 +879,7 @@ RayTracing(SurfaceIndex cameraIndex, SurfaceIndex seedIndex, SurfaceIndex colorI
     //printf("out(0): %d\n", out(0));
     //printf("out(1): %d\n", out(1));
 
-    //write(seedIndex, 0 , out);
-    //write(colorIndex, x, y, outColor);
+    //write(seedSVMPtr, 0 , out);
+    //write(colorSVMPtr, x, y, outColor);
 
 }
