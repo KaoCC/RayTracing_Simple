@@ -30,6 +30,7 @@ add_executable(
     ./src/Utility.cpp
     ./src/Vec.cpp
     ./src/CmSVMAllocator.cpp
+    ./src/Scene.cpp
 )
 
 
