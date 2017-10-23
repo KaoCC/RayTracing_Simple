@@ -251,7 +251,7 @@ void AllocateCmBuffers() {
 
 	// color
 	float* tmpColor = (float*)hostColor;
-	for (int i = 0; i < kColorFloatCount * pixelCount; ++i) {
+	for (unsigned i = 0; i < kColorFloatCount * pixelCount; ++i) {
 		tmpColor[i] = 0;
 	}
 
