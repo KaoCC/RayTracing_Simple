@@ -10,7 +10,12 @@
         Unsupported Platform
 #endif
 
+#include <vector>
+#include <string>
+
 double WallClockTime();
 
+std::vector<char> ReadKernelSourcesFile(const std::string& fileName);
 
 #endif
+

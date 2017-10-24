@@ -148,7 +148,7 @@ void displayFunc(void) {
 	// Title
 	glColor3f(1.f, 1.f, 1.f);
 	glRasterPos2i(4, height - 16);
-	PrintString(GLUT_BITMAP_HELVETICA_18, "OpenCL Ray Tracing Experiment");
+	PrintString(GLUT_BITMAP_HELVETICA_18, "Ray Tracing Experiment");
 
 	// Caption line 0
 	glColor3f(1.f, 1.f, 1.f);
