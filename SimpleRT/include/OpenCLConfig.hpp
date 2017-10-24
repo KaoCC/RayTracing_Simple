@@ -11,16 +11,12 @@
 
 
 
-
-
 void SetUpOpenCL();
 void FreeOpenCLBuffers();
 void DefaultSceneSetup();
 
 // tmp
-extern int forceWorkSize;
-extern int useGPU;
-extern std::string kernelFileName;
+
 
 
 #endif
