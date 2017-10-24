@@ -8,6 +8,9 @@
 #include "SetupGL.hpp"
 #include "OpenCLConfig.hpp"
 
+extern int forceWorkSize;
+extern int useGPU;
+extern std::string kernelFileName;
 
 int main(int argc, char *argv[]) {
 
@@ -38,7 +41,7 @@ int main(int argc, char *argv[]) {
 
 	UpdateCamera();
 
-	InitGlut(argc, argv, "OpenCL Ray Tracing Experiment");	
+	InitGlut(argc, argv, "Ray Tracing Demonstration");	
     glutMainLoop();
 
 	FreeOpenCLBuffers();

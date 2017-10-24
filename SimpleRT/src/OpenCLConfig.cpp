@@ -9,9 +9,6 @@
 
 
 
-
-
-
 /* Options Flags*/
 int forceWorkSize = 0;
 
@@ -50,7 +47,7 @@ void DefaultSceneSetup() {
 	spheres_host_ptr = DemoSpheres;
 	sphereCount = sizeof(DemoSpheres) / sizeof(Sphere);
 
-	spheres = (Sphere *)clSVMAlloc(context, CL_MEM_SVM_FINE_GRAIN_BUFFER, sizeof(Sphere) * sphereCount, 0);
+	spheres = static_cast<Sphere *>(clSVMAlloc(context, CL_MEM_SVM_FINE_GRAIN_BUFFER, sizeof(Sphere) * sphereCount, 0));
 
 	for (unsigned i = 0; i < sphereCount; ++i) {
 		spheres[i] = spheres_host_ptr[i];
@@ -77,20 +74,19 @@ static void AllocateOpenCLBuffers() {
 	const int pixelCount = width * height;
 	cameraPtr = (Camera*)clSVMAlloc(context, CL_MEM_SVM_FINE_GRAIN_BUFFER, sizeof(Camera), 0);
 
-	seeds = (unsigned int *)clSVMAlloc(context, CL_MEM_SVM_FINE_GRAIN_BUFFER, sizeof(unsigned int) * pixelCount * 2, 0);
+	seeds = static_cast<unsigned int *>(clSVMAlloc(context, CL_MEM_SVM_FINE_GRAIN_BUFFER, sizeof(unsigned int) * pixelCount * 2, 0));
 	for (int i = 0; i < pixelCount * 2; ++i) {
 		seeds[i] = std::rand();
 		if (seeds[i] < 2)
 			seeds[i] = 2;
 	}
 
-	pixels = (unsigned int *)clSVMAlloc(context, CL_MEM_SVM_FINE_GRAIN_BUFFER, sizeof(unsigned int) * pixelCount, 0);
+	pixels = static_cast<unsigned int *>(clSVMAlloc(context, CL_MEM_SVM_FINE_GRAIN_BUFFER, sizeof(unsigned int) * pixelCount, 0));
 
-	color = (Vec*)clSVMAlloc(context, CL_MEM_SVM_FINE_GRAIN_BUFFER, sizeof(Vec) * pixelCount, 0);
+	color = static_cast<Vec*>(clSVMAlloc(context, CL_MEM_SVM_FINE_GRAIN_BUFFER, sizeof(Vec) * pixelCount, 0));
 
 
 }
-
 
 
 static void SetUpKernelArguments() {
@@ -183,7 +179,6 @@ static void SetUpKernelArguments() {
 		exit(-1);
 	}
 }
-
 
 
 
@@ -600,8 +595,6 @@ void UpdateRendering() {
 	//}
 
 	//--------------------------------------------------------------------------
-
-
 
 	/*===========================================================================*/
 
