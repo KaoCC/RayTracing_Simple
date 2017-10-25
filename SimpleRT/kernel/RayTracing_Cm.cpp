@@ -13,6 +13,24 @@
 #define sign(x) ((x) > 0 ? 1 : -1)
 
 
+
+// simple impl.
+float clamp(float x, float low, float high) {
+	if (x < low) {
+		return low;
+	} else if (x > high) {
+		return high;
+	} else {
+		return x;
+	}
+}
+
+#define toInt(x) ((int)(cm_pow(clamp(x, 0.f, 1.f), 1.f / 2.2f) * 255.f + .5f))
+
+
+
+
+
 // we have to use C struct ...
 
 /*struct Vec {
@@ -637,7 +655,7 @@ _GENX_ void radiancePathTracing(SurfaceIndex spheresIndex, const unsigned kSpher
 //constexpr const unsigned seedOffset = sizeof(unsigned) * 2;
 
 _GENX_MAIN_ void
-RayTracing(SurfaceIndex cameraIndex, SurfaceIndex seedIndex, SurfaceIndex colorIndex, SurfaceIndex spheresIndex, unsigned sphereCount, unsigned inputSampleCount) {
+RayTracing(SurfaceIndex cameraIndex, SurfaceIndex seedIndex, SurfaceIndex colorIndex, SurfaceIndex spheresIndex,  SurfaceIndex pixelIndex, unsigned sphereCount, unsigned inputSampleCount) {
     
     int x = get_thread_origin_x();
     int y = get_thread_origin_y();
@@ -763,6 +781,24 @@ RayTracing(SurfaceIndex cameraIndex, SurfaceIndex seedIndex, SurfaceIndex colorI
         // not optimized ...
         write(seedIndex,  seedOffset , seedIn);
 
+
+
+
+
+
+        // pixel
+        const unsigned pixelOffsetStart = (iNum / 4) * 4;
+        const unsigned pixelLocalIndex = iNum % 4;
+        const unsigned pixelOffset = pixelOffsetStart * 4;      // sizeof(unsigned)
+        
+        vector<unsigned int, 4> pixelIn;
+        read(pixelIndex, pixelOffset, pixelIn);
+
+        pixelIn[pixelLocalIndex] = (toInt(color[0])) | (toInt(color[1]) << 8) | (toInt(color[2]) << 16);
+        
+
+        // write the pixel back
+        write(pixelIndex, pixelOffset, pixelIn);
 
     }
 
