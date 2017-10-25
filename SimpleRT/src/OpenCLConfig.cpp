@@ -41,7 +41,7 @@ static cl_kernel kernel;
 static unsigned int workGroupSize = 1;
 std::string kernelFileName = "RayTracing_Kernel.cl";
 
-
+unsigned* clPixels;
 
 void SetupOpenCLDefaultScene() {
 	spheres_host_ptr = DemoSpheres;
@@ -65,7 +65,7 @@ void FreeOpenCLBuffers() {
 	// openCL Buffer: color, pixel, seed
 
 	clSVMFree(context, seeds);
-	clSVMFree(context, pixels);
+	clSVMFree(context, clPixels);
 	clSVMFree(context, color);
 	clSVMFree(context, spheres);
 }
@@ -81,7 +81,7 @@ static void AllocateOpenCLBuffers() {
 			seeds[i] = 2;
 	}
 
-	pixels = static_cast<unsigned int *>(clSVMAlloc(context, CL_MEM_SVM_FINE_GRAIN_BUFFER, sizeof(unsigned int) * pixelCount, 0));
+	clPixels = static_cast<unsigned int *>(clSVMAlloc(context, CL_MEM_SVM_FINE_GRAIN_BUFFER, sizeof(unsigned int) * pixelCount, 0));
 
 	color = static_cast<Vec*>(clSVMAlloc(context, CL_MEM_SVM_FINE_GRAIN_BUFFER, sizeof(Vec) * pixelCount, 0));
 
@@ -172,7 +172,7 @@ static void SetUpKernelArguments() {
 	status = clSetKernelArgSVMPointer(
 		kernel,
 		8,
-		pixels);
+		clPixels);
 
 	if (status != CL_SUCCESS) {
 		fprintf(stderr, "Failed to set OpenCL arg. #9: %d\n", status);
