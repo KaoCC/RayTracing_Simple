@@ -25,6 +25,7 @@ add_executable(
     ./include/Vec.hpp
     ./include/CmSVMAllocator.hpp
     ./include/CmConfig.hpp
+    ./include/OpenCLConfig.hpp
 
     ./src/Main.cpp
     ./src/SetupGL.cpp
@@ -33,6 +34,7 @@ add_executable(
     ./src/CmSVMAllocator.cpp
     ./src/CmConfig.cpp
     ./src/Scene.cpp
+    ./src/OpenCLConfig.cpp
 )
 
 
