@@ -13,6 +13,7 @@
 extern int forceWorkSize;
 extern int useGPU;
 extern std::string kernelFileName;
+extern unsigned* hostPixels;
 
 int main(int argc, char *argv[]) {
 

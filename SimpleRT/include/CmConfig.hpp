@@ -9,7 +9,7 @@ void SetupCM();
 
 
 // tmp
-extern unsigned int* hostPixels;
+//extern unsigned int* hostPixels;
 
 
 
