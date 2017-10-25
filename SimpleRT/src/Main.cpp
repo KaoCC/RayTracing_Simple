@@ -4,15 +4,20 @@
 #include <cstdlib>
 #include <ctime>
 
+#include "Camera.hpp"
 
 #include "SetupGL.hpp"
 #include "OpenCLConfig.hpp"
 
 #include "CmSVMAllocator.hpp"
 #include "CmConfig.hpp"
+
 extern int forceWorkSize;
 extern int useGPU;
 extern std::string kernelFileName;
+extern unsigned int *pixels;
+extern Camera* cameraPtr;
+
 extern unsigned* clPixels;
 extern unsigned* hostPixels;
 

@@ -617,10 +617,10 @@ void ReInit(const int reallocBuffers) {
 
 	if (reallocBuffers) {
 		FreeOpenCLBuffers();
-		UpdateCamera();
+		UpdateCamera(cameraPtr);
 		AllocateOpenCLBuffers();
 	} else {
-		UpdateCamera();
+		UpdateCamera(cameraPtr);
 	}
 
 
