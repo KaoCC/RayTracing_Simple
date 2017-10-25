@@ -43,7 +43,7 @@ std::string kernelFileName = "RayTracing_Kernel.cl";
 
 
 
-void DefaultSceneSetup() {
+void SetupOpenCLDefaultScene() {
 	spheres_host_ptr = DemoSpheres;
 	sphereCount = sizeof(DemoSpheres) / sizeof(Sphere);
 

@@ -13,7 +13,7 @@
 
 void SetUpOpenCL();
 void FreeOpenCLBuffers();
-void DefaultSceneSetup();
+void SetupOpenCLDefaultScene();
 
 // tmp
 
