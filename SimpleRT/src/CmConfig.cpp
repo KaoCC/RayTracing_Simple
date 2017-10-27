@@ -69,8 +69,8 @@ CmBuffer* pixelBuffer;
 std::unique_ptr<CmSVMAllocator> pCmAllocator;
 
 
-const unsigned kThreadWidth = 20;
-const unsigned kThreadheight = 20;
+const unsigned kThreadWidth = 10;
+const unsigned kThreadHeight = 100;
 CmThreadSpace* kernelThreadspace;
 
 CmTask* pCmTask;
@@ -366,8 +366,8 @@ void SetupCM() {
 	// create thread count, thread space 
 
 	// check the value !
-	pCmDev->CreateThreadSpace(kThreadWidth, kThreadheight, kernelThreadspace);
-	cmKernel->SetThreadCount(kThreadWidth * kThreadheight);
+	pCmDev->CreateThreadSpace(kThreadWidth, kThreadHeight, kernelThreadspace);
+	cmKernel->SetThreadCount(kThreadWidth * kThreadHeight);
 
 
 	// create Task
@@ -395,7 +395,7 @@ void ExecuteCmKernel() {
 	}
 
 	// test printf
-	pCmDev->InitPrintBuffer();
+	//pCmDev->InitPrintBuffer();
 
 	int status = pCmQueue->Enqueue(pCmTask, pCmEvent, kernelThreadspace);
 
@@ -407,10 +407,10 @@ void ExecuteCmKernel() {
 	pCmEvent->WaitForTaskFinished();
 
 	std::cout << "Cm Done!" << std::endl;
-	std::cerr << std::endl;
+	//std::cerr << std::endl;
 
-	pCmDev->FlushPrintBuffer();
-	std::cout << std::endl;
+	//pCmDev->FlushPrintBuffer();
+	//std::cout << std::endl;
 
 
 	if (!useCmSVM) {
