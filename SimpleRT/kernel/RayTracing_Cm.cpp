@@ -4,13 +4,31 @@
 
 
 // tmp
-#include "../include/vec.hpp"
+// #include "../include/vec.hpp"
 // #include "../include/Ray.hpp"
 
 
 #define FLOAT_PI 3.14159265358979323846f
 
 #define sign(x) ((x) > 0 ? 1 : -1)
+
+
+
+// simple impl.
+float clamp(float x, float low, float high) {
+	if (x < low) {
+		return low;
+	} else if (x > high) {
+		return high;
+	} else {
+		return x;
+	}
+}
+
+#define toInt(x) ((int)(cm_pow(clamp(x, 0.f, 1.f), 1.f / 2.2f) * 255.f + .5f))
+
+
+
 
 
 // we have to use C struct ...
@@ -35,8 +53,8 @@ const float kEpsilon = 0.01f;
 const unsigned kWidth = 800;
 const unsigned kHeight = 600;
 
-constexpr const unsigned threadCountX = 20;
-constexpr const unsigned threadCountY = 20;
+constexpr const unsigned threadCountX = 10;
+constexpr const unsigned threadCountY = 100;
 
 
 constexpr const unsigned kSphereClassFloatcount =  12;       // padding
@@ -637,7 +655,7 @@ _GENX_ void radiancePathTracing(SurfaceIndex spheresIndex, const unsigned kSpher
 //constexpr const unsigned seedOffset = sizeof(unsigned) * 2;
 
 _GENX_MAIN_ void
-RayTracing(SurfaceIndex cameraIndex, SurfaceIndex seedIndex, SurfaceIndex colorIndex, SurfaceIndex spheresIndex, unsigned sphereCount, unsigned inputSampleCount) {
+RayTracing(SurfaceIndex cameraIndex, SurfaceIndex seedIndex, SurfaceIndex colorIndex, SurfaceIndex spheresIndex,  SurfaceIndex pixelIndex, unsigned sphereCount, unsigned inputSampleCount) {
     
     int x = get_thread_origin_x();
     int y = get_thread_origin_y();
@@ -659,7 +677,6 @@ RayTracing(SurfaceIndex cameraIndex, SurfaceIndex seedIndex, SurfaceIndex colorI
 
     //Sphere aa = *(reinterpret_cast<Sphere*>(&spheresInedx));
     //Sphere* s = reinterpret_cast<Sphere*>(tt);
-
 
 
     unsigned sphereOffset = 0;
@@ -698,72 +715,94 @@ RayTracing(SurfaceIndex cameraIndex, SurfaceIndex seedIndex, SurfaceIndex colorI
 
 
     unsigned upperLeftPixelNumber = (height / threadCountY) * y * width + (width / threadCountX) * x;
-    unsigned lowerRightPixelBound = (height / threadCountY) * (y + 1) * width + (width / threadCountX) * (x + 1);
+    //unsigned lowerRightPixelBound = (height / threadCountY) * (y + 1) * width + (width / threadCountX) * (x + 1);
 
+
+    unsigned lowerLeftPixelNumber = (height / threadCountY) * (y + 1) * width + (width / threadCountX) * x;
     
     // test
     //printf("x, y : (%u, %u) Upper left pixel number (id): %u\n", x , y,  upperLeftPixelNumber);
 
+    for (unsigned startNum = upperLeftPixelNumber; startNum < lowerLeftPixelNumber; startNum += width) {
 
-    for (unsigned iNum = upperLeftPixelNumber; iNum < lowerRightPixelBound; ++iNum) {
+        for (unsigned iNum = startNum; iNum < startNum + (width / threadCountX); ++iNum) {
 
-        unsigned seedNum = 2 * iNum;
+            unsigned seedNum = 2 * iNum;
 
-        const unsigned offsetStart = (seedNum / 4) * 4;
-        const unsigned localIndex = seedNum % 4;
-    
-        const unsigned seedOffset = offsetStart * 4;
-
-        vector<unsigned int, 4> seedIn;
-        read(seedIndex,  seedOffset , seedIn);
-
-
-        vector_ref<unsigned, 2> seedFinal = seedIn.select<2, 1>(localIndex);
-
-        CmRay ray;
-        generateCameraRay(camera, seedFinal, width, height, iNum % width,  iNum / width, ray);        // check x, y
-    
-        vector<float, 3> result;
-        radiancePathTracing(spheresIndex, sphereCount, ray, seedFinal, result); 
-
-
-        unsigned currentColorNumber = iNum;
-        unsigned colorOffset = currentColorNumber * 16;
-    
-        // single color?
-        vector<float, kColorFloatcount> color;
-    
-        // read color ?
-        read(colorIndex, colorOffset, color);
-    
-        //printf("read color: %f %f %f %f\n", color[0], color[1], color[2], color[3]);
+            const unsigned offsetStart = (seedNum / 4) * 4;
+            const unsigned localIndex = seedNum % 4;
         
-    
-        // TMP
-        const unsigned currentSample = inputSampleCount;       // Eventually it should be written from host
-        const float k1 = currentSample;
-        const float k2 = 1.f / (currentSample + 1.f);
-    
-        color.select<3,1>(0) = ((color.select<3,1>(0) * k1) + result) * k2;
-    
-        // test only
-        color[3] = -1;
-    
+            const unsigned seedOffset = offsetStart * 4;
 
-        //printf("current sample: %u\n", currentSample);
-    
-        //printf("(%d, %d) write color: %f %f %f %f\n", x , y, color[0], color[1], color[2], color[3]);
-    
-        write(colorIndex, colorOffset, color);        
+            vector<unsigned int, 4> seedIn;
+            read(seedIndex,  seedOffset , seedIn);
 
 
-        // missing : write back the seeds ...
+            vector_ref<unsigned, 2> seedFinal = seedIn.select<2, 1>(localIndex);
+
+            CmRay ray;
+            generateCameraRay(camera, seedFinal, width, height, iNum % width,  iNum / width, ray);        // check x, y
+        
+            vector<float, 3> result;
+            radiancePathTracing(spheresIndex, sphereCount, ray, seedFinal, result); 
 
 
-        // not optimized ...
-        write(seedIndex,  seedOffset , seedIn);
+            unsigned currentColorNumber = iNum;
+            unsigned colorOffset = currentColorNumber * 16;
+        
+            // single color?
+            vector<float, kColorFloatcount> color;
+        
+            // read color ?
+            read(colorIndex, colorOffset, color);
+        
+            //printf("read color: %f %f %f %f\n", color[0], color[1], color[2], color[3]);
+            
+        
+            // TMP
+            const unsigned currentSample = inputSampleCount;       // Eventually it should be written from host
+            const float k1 = currentSample;
+            const float k2 = 1.f / (currentSample + 1.f);
+        
+            color.select<3,1>(0) = ((color.select<3,1>(0) * k1) + result) * k2;
+        
+            // test only
+            color[3] = -1;
+        
+
+            //printf("current sample: %u\n", currentSample);
+        
+            //printf("(%d, %d) write color: %f %f %f %f\n", x , y, color[0], color[1], color[2], color[3]);
+        
+            write(colorIndex, colorOffset, color);        
 
 
+            // missing : write back the seeds ...
+
+
+            // not optimized ...
+            write(seedIndex,  seedOffset , seedIn);
+
+
+
+
+
+
+            // pixel
+            const unsigned pixelOffsetStart = (iNum / 4) * 4;
+            const unsigned pixelLocalIndex = iNum % 4;
+            const unsigned pixelOffset = pixelOffsetStart * 4;      // sizeof(unsigned)
+            
+            vector<unsigned int, 4> pixelIn;
+            read(pixelIndex, pixelOffset, pixelIn);
+
+            pixelIn[pixelLocalIndex] = (toInt(color[0])) | (toInt(color[1]) << 8) | (toInt(color[2]) << 16);
+            
+
+            // write the pixel back
+            write(pixelIndex, pixelOffset, pixelIn);
+
+        }
     }
 
 

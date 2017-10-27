@@ -44,7 +44,7 @@ static CmDevice* pCmDev;
 static CmQueue* pCmQueue;
 
 
-static bool useCmSVM = true;
+static bool useCmSVM = false;
 
 static const std::string isaFileName = useCmSVM ? "RayTracing_Cm_SVM.isa" : "RayTracing_Cm.isa";
 
@@ -69,8 +69,8 @@ CmBuffer* pixelBuffer;
 std::unique_ptr<CmSVMAllocator> pCmAllocator;
 
 
-const unsigned kThreadWidth = 20;
-const unsigned kThreadheight = 20;
+const unsigned kThreadWidth = 10;
+const unsigned kThreadHeight = 100;
 CmThreadSpace* kernelThreadspace;
 
 CmTask* pCmTask;
@@ -221,19 +221,17 @@ void AllocateCmBuffers() {
 
 		pCmDev->CreateBuffer(sizeof(unsigned int) * pixelCount * 2, seedsBuffer);
 
-		// pixels
-		pCmDev->CreateBuffer(sizeof(unsigned int) * pixelCount, pixelBuffer);
 
 		// bad design, for testing only
 		// Vec 3
-
 
 		hostColor = reinterpret_cast<Vec*>(new float[kColorFloatCount * pixelCount]);
 		pCmDev->CreateBuffer(sizeof(float) * kColorFloatCount * pixelCount, colorBuffer);
 
 
+		// pixels
 		hostPixels = new unsigned[pixelCount];
-
+		pCmDev->CreateBuffer(sizeof(unsigned) * pixelCount, pixelBuffer);		// alignment ?  current setting : 4 * 800 * 600 
 	}
 
 	
@@ -351,6 +349,7 @@ void SetupCM() {
 		result = cmKernel->SetKernelArg(kernelArgIndex++, sizeof(SurfaceIndex), seedsIndex);
 		result = cmKernel->SetKernelArg(kernelArgIndex++, sizeof(SurfaceIndex), colorIndex);
 		result = cmKernel->SetKernelArg(kernelArgIndex++, sizeof(SurfaceIndex), spheresIndex);
+		result = cmKernel->SetKernelArg(kernelArgIndex++, sizeof(SurfaceIndex), pixelIndex);
 		result = cmKernel->SetKernelArg(kernelArgIndex++, sizeof(unsigned), &defaultSphereCount);
 	}
 
@@ -367,8 +366,8 @@ void SetupCM() {
 	// create thread count, thread space 
 
 	// check the value !
-	pCmDev->CreateThreadSpace(kThreadWidth, kThreadheight, kernelThreadspace);
-	cmKernel->SetThreadCount(kThreadWidth * kThreadheight);
+	pCmDev->CreateThreadSpace(kThreadWidth, kThreadHeight, kernelThreadspace);
+	cmKernel->SetThreadCount(kThreadWidth * kThreadHeight);
 
 
 	// create Task
@@ -392,11 +391,11 @@ void ExecuteCmKernel() {
 		seedsBuffer->WriteSurface(reinterpret_cast<unsigned char*>(hostSeeds), nullptr);
 		colorBuffer->WriteSurface(reinterpret_cast<unsigned char*>(hostColor), nullptr);
 		spheresBuffer->WriteSurface(reinterpret_cast<unsigned char*>(hostSpheres), nullptr);
-
+		//pixelBuffer->WriteSurface(reinterpret_cast<unsigned char*>(hostPixels), nullptr);
 	}
 
 	// test printf
-	pCmDev->InitPrintBuffer();
+	//pCmDev->InitPrintBuffer();
 
 	int status = pCmQueue->Enqueue(pCmTask, pCmEvent, kernelThreadspace);
 
@@ -408,10 +407,10 @@ void ExecuteCmKernel() {
 	pCmEvent->WaitForTaskFinished();
 
 	std::cout << "Cm Done!" << std::endl;
-	std::cerr << std::endl;
+	//std::cerr << std::endl;
 
-	pCmDev->FlushPrintBuffer();
-	std::cout << std::endl;
+	//pCmDev->FlushPrintBuffer();
+	//std::cout << std::endl;
 
 
 	if (!useCmSVM) {
@@ -424,27 +423,30 @@ void ExecuteCmKernel() {
 
 		pCmEvent->WaitForTaskFinished();
 
+		pixelBuffer->ReadSurface(reinterpret_cast<unsigned char*>(hostPixels), pCmEvent);
+
+		pCmEvent->WaitForTaskFinished();
 	}
 
 	// tmp color test
-	float* tmpColorPtr = reinterpret_cast<float*>(hostColor);
-	//std::cerr << "Color 0 1 2 pading: " << tmpColorPtr[0] << " " << tmpColorPtr[1] << " " << tmpColorPtr[2] << " " << tmpColorPtr[3] << " " << std::endl;
+	//float* tmpColorPtr = reinterpret_cast<float*>(hostColor);
+	////std::cerr << "Color 0 1 2 pading: " << tmpColorPtr[0] << " " << tmpColorPtr[1] << " " << tmpColorPtr[2] << " " << tmpColorPtr[3] << " " << std::endl;
 
 
-	// convert to pixel here ...
+	//// convert to pixel here ...
 
-	// design trade-off : use Cm to convert and read/write the pixel value or do it locally (with CPU) ?
+	//// design trade-off : use Cm to convert and read/write the pixel value or do it locally (with CPU) ?
 
 
 
-	const int pixelCount = width * height;
-	for (auto i = 0; i < pixelCount; ++i) {
-		hostPixels[i] = (toInt(tmpColorPtr[4 * i])) | (toInt(tmpColorPtr[4 * i + 1]) << 8) | (toInt(tmpColorPtr[4 * i + 2]) << 16);
+	//const int pixelCount = width * height;
+	//for (auto i = 0; i < pixelCount; ++i) {
+	//	hostPixels[i] = (toInt(tmpColorPtr[4 * i])) | (toInt(tmpColorPtr[4 * i + 1]) << 8) | (toInt(tmpColorPtr[4 * i + 2]) << 16);
 
-		//if (hostPixels[i] > 0) {
-		//	std::cerr << i <<" PIXEL: " << hostPixels[i] << " " << (toInt(tmpColorPtr[4 * i])) << " " << (toInt(tmpColorPtr[4 * i + 1])) << " " << (toInt(tmpColorPtr[4 * i + 2])) << std::endl;
-		//}
-	}
+	//	//if (hostPixels[i] > 0) {
+	//	//	std::cerr << i <<" PIXEL: " << hostPixels[i] << " " << (toInt(tmpColorPtr[4 * i])) << " " << (toInt(tmpColorPtr[4 * i + 1])) << " " << (toInt(tmpColorPtr[4 * i + 2])) << std::endl;
+	//	//}
+	//}
 
 
 
@@ -468,7 +470,7 @@ void UpdateRenderingCm() {
 
 
 	// tmp
-	cmKernel->SetKernelArg(5, sizeof(unsigned), &currentSampleCount);
+	cmKernel->SetKernelArg(6, sizeof(unsigned), &currentSampleCount);
 
 	ExecuteCmKernel();
 	++currentSampleCount;
