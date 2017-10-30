@@ -44,7 +44,7 @@ std::string kernelFileName = "RayTracing_Kernel.cl";
 
 unsigned* clPixels;
 
-void SetupOpenCLDefaultScene() {
+
 // for CL buffers
 
 // Buffers
@@ -53,6 +53,9 @@ static cl_mem colorBuffer;
 static cl_mem cameraBuffer;
 static cl_mem sphereBuffer;
 static cl_mem seedBuffer;
+
+void SetupOpenCLDefaultScene() {
+
 	spheres_host_ptr = DemoSpheres;
 	sphereCount = sizeof(DemoSpheres) / sizeof(Sphere);
 
@@ -98,7 +101,7 @@ void FreeOpenCLBuffers() {
 
 	if (useCLSVM) {
 		clSVMFree(context, seeds);
-		clSVMFree(context, pixels);
+		clSVMFree(context, clPixels);
 		clSVMFree(context, color);
 		clSVMFree(context, spheres);
 	} else {
@@ -135,7 +138,7 @@ void FreeOpenCLBuffers() {
 		// delete raw array
 		delete cameraPtr;
 		delete[] seeds;
-		delete[] pixels;
+		delete[] clPixels;
 		delete[] color;
 		//delete[] spheres;
 
@@ -151,7 +154,7 @@ static void AllocateOpenCLBuffers() {
 
 		cameraPtr = static_cast<Camera*>(clSVMAlloc(context, CL_MEM_SVM_FINE_GRAIN_BUFFER, sizeof(Camera), 0));
 		seeds = static_cast<unsigned*>(clSVMAlloc(context, CL_MEM_SVM_FINE_GRAIN_BUFFER, sizeof(unsigned) * pixelCount * 2, 0));
-		pixels = static_cast<unsigned*>(clSVMAlloc(context, CL_MEM_SVM_FINE_GRAIN_BUFFER, sizeof(unsigned) * pixelCount, 0));
+		clPixels = static_cast<unsigned*>(clSVMAlloc(context, CL_MEM_SVM_FINE_GRAIN_BUFFER, sizeof(unsigned) * pixelCount, 0));
 		color = static_cast<Vec*>(clSVMAlloc(context, CL_MEM_SVM_FINE_GRAIN_BUFFER, sizeof(Vec) * pixelCount, 0));
 
 	} else {
@@ -159,7 +162,7 @@ static void AllocateOpenCLBuffers() {
 		// raw array space
 		cameraPtr = new Camera();
 		seeds = new unsigned[pixelCount * 2];
-		pixels = new unsigned[pixelCount];
+		clPixels = new unsigned[pixelCount];
 		color = new Vec[pixelCount];
 
 		// CL Buffers
@@ -363,7 +366,7 @@ static void SetUpKernelArguments() {
 		status = clSetKernelArgSVMPointer(
 			kernel,
 			8,
-			pixels);
+			clPixels);
 
 		if (status != CL_SUCCESS) {
 			fprintf(stderr, "Failed to set OpenCL arg. #9: %d\n", status);
@@ -829,7 +832,7 @@ static void ExecuteOpenCLKernel() {
 			CL_TRUE,
 			0,
 			width * height * sizeof(unsigned),
-			pixels,
+			clPixels,
 			0,
 			NULL,
 			NULL);
