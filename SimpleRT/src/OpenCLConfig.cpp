@@ -16,16 +16,16 @@ int useGPU = 0;
 bool useCLSVM = false;
 
 
-static unsigned int *seeds;
+static unsigned *seeds;
 
 static Vec* color;
 
 //Camera camera;
 Camera* cameraPtr;
 static int currentSample = 0;
-Sphere *spheres;
-Sphere *spheres_host_ptr;
-unsigned int sphereCount;
+Sphere* spheres;
+Sphere* spheres_host_ptr;
+unsigned sphereCount;
 
 
 // selection parameters
@@ -39,7 +39,7 @@ static cl_context context;
 static cl_command_queue commandQueue;
 static cl_program program;
 static cl_kernel kernel;
-static unsigned int workGroupSize = 1;
+static unsigned workGroupSize = 1;
 std::string kernelFileName = "RayTracing_Kernel.cl";
 
 
@@ -58,7 +58,7 @@ void DefaultSceneSetup() {
 	sphereCount = sizeof(DemoSpheres) / sizeof(Sphere);
 
 	if (useCLSVM) {
-		spheres = static_cast<Sphere *>(clSVMAlloc(context, CL_MEM_SVM_FINE_GRAIN_BUFFER, sizeof(Sphere) * sphereCount, 0));
+		spheres = static_cast<Sphere*>(clSVMAlloc(context, CL_MEM_SVM_FINE_GRAIN_BUFFER, sizeof(Sphere) * sphereCount, 0));
 
 		for (unsigned i = 0; i < sphereCount; ++i) {
 			spheres[i] = spheres_host_ptr[i];
@@ -102,6 +102,44 @@ void FreeOpenCLBuffers() {
 		clSVMFree(context, pixels);
 		clSVMFree(context, color);
 		clSVMFree(context, spheres);
+	} else {
+
+
+		// Release buffers
+
+		// openCL Buffer: color, pixel, seed, camera
+		cl_int status = clReleaseMemObject(colorBuffer);
+		if (status != CL_SUCCESS) {
+			fprintf(stderr, "Failed to release OpenCL color buffer: %d\n", status);
+			exit(-1);
+		}
+
+		status = clReleaseMemObject(pixelBuffer);
+		if (status != CL_SUCCESS) {
+			fprintf(stderr, "Failed to release OpenCL pixel buffer: %d\n", status);
+			exit(-1);
+		}
+
+		status = clReleaseMemObject(seedBuffer);
+		if (status != CL_SUCCESS) {
+			fprintf(stderr, "Failed to release OpenCL seed buffer: %d\n", status);
+			exit(-1);
+		}
+
+		status = clReleaseMemObject(cameraBuffer);
+		if (status != CL_SUCCESS) {
+			fprintf(stderr, "Failed to release OpenCL camera buffer: %d\n", status);
+			exit(-1);
+		}
+
+
+		// delete raw array
+		delete cameraPtr;
+		delete[] seeds;
+		delete[] pixels;
+		delete[] color;
+		//delete[] spheres;
+
 	}
 }
 
@@ -113,8 +151,8 @@ static void AllocateOpenCLBuffers() {
 	if (useCLSVM) {
 
 		cameraPtr = static_cast<Camera*>(clSVMAlloc(context, CL_MEM_SVM_FINE_GRAIN_BUFFER, sizeof(Camera), 0));
-		seeds = static_cast<unsigned int *>(clSVMAlloc(context, CL_MEM_SVM_FINE_GRAIN_BUFFER, sizeof(unsigned) * pixelCount * 2, 0));
-		pixels = static_cast<unsigned int *>(clSVMAlloc(context, CL_MEM_SVM_FINE_GRAIN_BUFFER, sizeof(unsigned) * pixelCount, 0));
+		seeds = static_cast<unsigned*>(clSVMAlloc(context, CL_MEM_SVM_FINE_GRAIN_BUFFER, sizeof(unsigned) * pixelCount * 2, 0));
+		pixels = static_cast<unsigned*>(clSVMAlloc(context, CL_MEM_SVM_FINE_GRAIN_BUFFER, sizeof(unsigned) * pixelCount, 0));
 		color = static_cast<Vec*>(clSVMAlloc(context, CL_MEM_SVM_FINE_GRAIN_BUFFER, sizeof(Vec) * pixelCount, 0));
 
 	} else {
