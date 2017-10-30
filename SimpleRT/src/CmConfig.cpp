@@ -59,23 +59,23 @@ unsigned* hostPixels;
 
 // Cm buffers
 
-CmBuffer* cameraBuffer;
-CmBuffer* seedsBuffer;
-CmBuffer* colorBuffer;
-CmBuffer* spheresBuffer;
-CmBuffer* pixelBuffer;
+static CmBuffer* cameraBuffer;
+static CmBuffer* seedsBuffer;
+static CmBuffer* colorBuffer;
+static CmBuffer* spheresBuffer;
+static CmBuffer* pixelBuffer;
 
 // cm SVM Allocator
-std::unique_ptr<CmSVMAllocator> pCmAllocator;
+static std::unique_ptr<CmSVMAllocator> pCmAllocator;
 
 
 const unsigned kThreadWidth = 10;
 const unsigned kThreadHeight = 100;
-CmThreadSpace* kernelThreadspace;
+static CmThreadSpace* kernelThreadspace;
 
-CmTask* pCmTask;
+static CmTask* pCmTask;
 
-CmEvent* pCmEvent = nullptr;
+static CmEvent* pCmEvent = nullptr;
 
 static CmKernel* cmKernel = nullptr;
 
