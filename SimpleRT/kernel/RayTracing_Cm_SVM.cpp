@@ -651,7 +651,7 @@ _GENX_ void radiancePathTracing(svmptr_t spheresSVMPtr, const unsigned kSphereCo
 //constexpr const unsigned seedOffset = sizeof(unsigned) * 2;
 
 _GENX_MAIN_ void
-RayTracing(svmptr_t cameraSVMPtr, svmptr_t seedSVMPtr, svmptr_t colorSVMPtr, svmptr_t spheresSVMPtr, unsigned sphereCount, unsigned inputSampleCount) {
+RayTracing(svmptr_t cameraSVMPtr, svmptr_t seedSVMPtr, svmptr_t colorSVMPtr, svmptr_t spheresSVMPtr, svmptr_t pixelSVMPtr, unsigned sphereCount, unsigned inputSampleCount) {
     
     int x = get_thread_origin_x();
     int y = get_thread_origin_y();

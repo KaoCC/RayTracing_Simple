@@ -322,6 +322,7 @@ void SetupCM() {
 		result = cmKernel->SetKernelArg(kernelArgIndex++, sizeof(void*), &hostSeeds);
 		result = cmKernel->SetKernelArg(kernelArgIndex++, sizeof(void*), &hostColor);
 		result = cmKernel->SetKernelArg(kernelArgIndex++, sizeof(void*), &hostSpheres);
+		result = cmKernel->SetKernelArg(kernelArgIndex++, sizeof(void*), &hostPixels);
 		result = cmKernel->SetKernelArg(kernelArgIndex++, sizeof(unsigned), &defaultSphereCount);
 
 	} else {
