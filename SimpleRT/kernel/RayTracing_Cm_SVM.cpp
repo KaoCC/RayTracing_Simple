@@ -13,6 +13,22 @@
 #define sign(x) ((x) > 0 ? 1 : -1)
 
 
+// simple impl.
+float clamp(float x, float low, float high) {
+	if (x < low) {
+		return low;
+	} else if (x > high) {
+		return high;
+	} else {
+		return x;
+	}
+}
+
+#define toInt(x) ((int)(cm_pow(clamp(x, 0.f, 1.f), 1.f / 2.2f) * 255.f + .5f))
+
+
+
+
 // we have to use C struct ...
 
 /*struct Vec {
@@ -712,70 +728,93 @@ RayTracing(svmptr_t cameraSVMPtr, svmptr_t seedSVMPtr, svmptr_t colorSVMPtr, svm
 
 
     unsigned upperLeftPixelNumber = (height / threadCountY) * y * width + (width / threadCountX) * x;
-    unsigned lowerRightPixelBound = (height / threadCountY) * (y + 1) * width + (width / threadCountX) * (x + 1);
+    //unsigned lowerRightPixelBound = (height / threadCountY) * (y + 1) * width + (width / threadCountX) * (x + 1);
+
+
+    unsigned lowerLeftPixelNumber = (height / threadCountY) * (y + 1) * width + (width / threadCountX) * x;
 
     
     // test
     //printf("x, y : (%u, %u) Upper left pixel number (id): %u\n", x , y,  upperLeftPixelNumber);
 
 
-    for (unsigned iNum = upperLeftPixelNumber; iNum < lowerRightPixelBound; ++iNum) {
+    for (unsigned startNum = upperLeftPixelNumber; startNum < lowerLeftPixelNumber; startNum += width) {
 
-        unsigned seedNum = 2 * iNum;
+        for (unsigned iNum = startNum; iNum < startNum + (width / threadCountX); ++iNum) {
 
-        const unsigned offsetStart = (seedNum / 4) * 4;
-        const unsigned localIndex = seedNum % 4;
-    
-        const unsigned seedOffset = offsetStart * 4;
+            unsigned seedNum = 2 * iNum;
 
-        vector<unsigned int, 4> seedIn;
-        cm_svm_block_read(seedSVMPtr + seedOffset , seedIn);
-
-
-        vector_ref<unsigned, 2> seedFinal = seedIn.select<2, 1>(localIndex);
-
-        CmRay ray;
-        generateCameraRay(camera, seedFinal, width, height, iNum % width,  iNum / width, ray);        // check x, y
-    
-        vector<float, 3> result;
-        radiancePathTracing(spheresSVMPtr, sphereCount, ray, seedFinal, result); 
-
-
-        unsigned currentColorNumber = iNum;
-        unsigned colorOffset = currentColorNumber * 16;
-    
-        // single color?
-        vector<float, kColorFloatcount> color;
-    
-        // read color ?
-        cm_svm_block_read(colorSVMPtr + colorOffset, color);
-    
-        //printf("read color: %f %f %f %f\n", color[0], color[1], color[2], color[3]);
+            const unsigned offsetStart = (seedNum / 4) * 4;
+            const unsigned localIndex = seedNum % 4;
         
-    
-        // TMP
-        const unsigned currentSample = inputSampleCount;       // Eventually it should be written from host
-        const float k1 = currentSample;
-        const float k2 = 1.f / (currentSample + 1.f);
-    
-        color.select<3,1>(0) = ((color.select<3,1>(0) * k1) + result) * k2;
-    
-        // test only
-        color[3] = -1;
-    
+            const unsigned seedOffset = offsetStart * 4;
 
-        //printf("current sample: %u\n", currentSample);
-    
-        //printf("(%d, %d) write color: %f %f %f %f\n", x , y, color[0], color[1], color[2], color[3]);
-    
-        cm_svm_block_write(colorSVMPtr + colorOffset, color);        
+            vector<unsigned int, 4> seedIn;
+            cm_svm_block_read(seedSVMPtr + seedOffset , seedIn);
 
 
-        // missing : write back the seeds ...
+            vector_ref<unsigned, 2> seedFinal = seedIn.select<2, 1>(localIndex);
+
+            CmRay ray;
+            generateCameraRay(camera, seedFinal, width, height, iNum % width,  iNum / width, ray);        // check x, y
+        
+            vector<float, 3> result;
+            radiancePathTracing(spheresSVMPtr, sphereCount, ray, seedFinal, result); 
 
 
-        // not optimized ...
-        cm_svm_block_write(seedSVMPtr + seedOffset , seedIn);
+            unsigned currentColorNumber = iNum;
+            unsigned colorOffset = currentColorNumber * 16;
+        
+            // single color?
+            vector<float, kColorFloatcount> color;
+        
+            // read color ?
+            cm_svm_block_read(colorSVMPtr + colorOffset, color);
+        
+            //printf("read color: %f %f %f %f\n", color[0], color[1], color[2], color[3]);
+            
+        
+            // TMP
+            const unsigned currentSample = inputSampleCount;       // Eventually it should be written from host
+            const float k1 = currentSample;
+            const float k2 = 1.f / (currentSample + 1.f);
+        
+            color.select<3,1>(0) = ((color.select<3,1>(0) * k1) + result) * k2;
+        
+            // test only
+            color[3] = -1;
+        
+
+            //printf("current sample: %u\n", currentSample);
+        
+            //printf("(%d, %d) write color: %f %f %f %f\n", x , y, color[0], color[1], color[2], color[3]);
+        
+            cm_svm_block_write(colorSVMPtr + colorOffset, color);        
+
+
+            // missing : write back the seeds ...
+
+
+            // not optimized ...
+            cm_svm_block_write(seedSVMPtr + seedOffset , seedIn);
+
+
+
+            // pixel
+            const unsigned pixelOffsetStart = (iNum / 4) * 4;
+            const unsigned pixelLocalIndex = iNum % 4;
+            const unsigned pixelOffset = pixelOffsetStart * 4;      // sizeof(unsigned)
+            
+            vector<unsigned int, 4> pixelIn;
+            //read(pixelIndex, pixelOffset, pixelIn);
+
+
+            pixelIn[pixelLocalIndex] = (toInt(color[0])) | (toInt(color[1]) << 8) | (toInt(color[2]) << 16);
+
+            // write the pixel back
+            cm_svm_block_write(pixelSVMPtr + pixelOffset, pixelIn);
+
+        }
 
 
     }
