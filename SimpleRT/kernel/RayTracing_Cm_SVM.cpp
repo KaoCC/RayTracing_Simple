@@ -818,7 +818,9 @@ RayTracing(svmptr_t cameraSVMPtr, svmptr_t seedSVMPtr, svmptr_t colorSVMPtr, svm
             pixelIn[pixelLocalIndex] = (toInt(color[0])) | (toInt(color[1]) << 8) | (toInt(color[2]) << 16);
 
             // write the pixel back
-            cm_svm_block_write(pixelSVMPtr + pixelOffset, pixelIn);
+            if (iNum % 4 == 3) {
+                cm_svm_block_write(pixelSVMPtr + pixelOffset, pixelIn);
+            }
 
         }
 

@@ -723,7 +723,10 @@ RayTracing(SurfaceIndex cameraIndex, SurfaceIndex seedIndex, SurfaceIndex colorI
     // test
     //printf("x, y : (%u, %u) Upper left pixel number (id): %u\n", x , y,  upperLeftPixelNumber);
 
+    vector<unsigned int, 4> pixelIn;
+
     for (unsigned startNum = upperLeftPixelNumber; startNum < lowerLeftPixelNumber; startNum += width) {
+
 
         for (unsigned iNum = startNum; iNum < startNum + (width / threadCountX); ++iNum) {
 
@@ -793,14 +796,18 @@ RayTracing(SurfaceIndex cameraIndex, SurfaceIndex seedIndex, SurfaceIndex colorI
             const unsigned pixelLocalIndex = iNum % 4;
             const unsigned pixelOffset = pixelOffsetStart * 4;      // sizeof(unsigned)
             
-            vector<unsigned int, 4> pixelIn;
-            read(pixelIndex, pixelOffset, pixelIn);
+
+            //read(pixelIndex, pixelOffset, pixelIn);
 
             pixelIn[pixelLocalIndex] = (toInt(color[0])) | (toInt(color[1]) << 8) | (toInt(color[2]) << 16);
             
 
+
             // write the pixel back
-            write(pixelIndex, pixelOffset, pixelIn);
+            if (iNum % 4 == 3) {
+                write(pixelIndex, pixelOffset, pixelIn);
+            }
+
 
         }
     }
