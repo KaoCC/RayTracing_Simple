@@ -271,7 +271,11 @@ _GENX_ bool intersect(svmptr_t spheresSVMPtr, const unsigned kSphereCount, const
 
         CmSphere sphere;
         cm_svm_block_read(spheresSVMPtr + sphereOffset, sphere.select<4, 1>(0));
-        cm_svm_block_read(spheresSVMPtr + sphereOffset + 4 * sizeof(float), sphere.select<4, 1>(4));
+        cm_svm_block_read(spheresSVMPtr + sphereOffset + 4 * sizeof(float), sphere.select<8, 1>(4));
+        //cm_svm_block_read(spheresSVMPtr + sphereOffset + 4 * sizeof(float) + 4 * sizeof(float), sphere.select<4, 1>(8));
+
+        /*printf("[%d] Sphere rad: %f\n, p: %f ,%f, %f\n, e: %f, %f, %f\n, c: %f, %f, %f\n, refl: %f\n", i,
+         sphere(0), sphere(1), sphere(2), sphere(3), sphere(4), sphere(5), sphere(6), sphere(7), sphere(8), sphere(9), sphere(10) ); */
 
         // KAOCC: check the sphere information
 
@@ -299,7 +303,8 @@ _GENX_ bool intersectP(svmptr_t spheresSVMPtr, const unsigned kSphereCount, cons
         //cm_svm_block_read(spheresSVMPtr + sphereOffset, sphere);
 
         cm_svm_block_read(spheresSVMPtr + sphereOffset, sphere.select<4, 1>(0));
-        cm_svm_block_read(spheresSVMPtr + sphereOffset + 4 * sizeof(float), sphere.select<4, 1>(4));
+        cm_svm_block_read(spheresSVMPtr + sphereOffset + 4 * sizeof(float), sphere.select<8, 1>(4));
+        //cm_svm_block_read(spheresSVMPtr + sphereOffset + 4 * sizeof(float) + 4 * sizeof(float), sphere.select<4, 1>(8));
 
 
         const float d = sphereIntersect(sphere, currentRay);
@@ -348,8 +353,8 @@ _GENX_ void sampleLights(svmptr_t spheresSVMPtr, const unsigned kSphereCount, Cm
 
 
         cm_svm_block_read(spheresSVMPtr + lightOffset, light.select<4, 1>(0));
-        cm_svm_block_read(spheresSVMPtr + lightOffset + 4 * sizeof(float), light.select<4, 1>(4));
-
+        cm_svm_block_read(spheresSVMPtr + lightOffset + 4 * sizeof(float), light.select<8, 1>(4));
+        //cm_svm_block_read(spheresSVMPtr + lightOffset + 4 * sizeof(float) + 4 * sizeof(float), light.select<4, 1>(8));
 
         if (!vecIsZero(light.select<3, 1>(4))) {
 
@@ -462,7 +467,8 @@ _GENX_ void radiancePathTracing(svmptr_t spheresSVMPtr, const unsigned kSphereCo
 
 
         cm_svm_block_read(spheresSVMPtr + hitSphereOffset, hitSphere.select<4, 1>(0));
-        cm_svm_block_read(spheresSVMPtr + hitSphereOffset + 4 * sizeof(float), hitSphere.select<4, 1>(4));
+        cm_svm_block_read(spheresSVMPtr + hitSphereOffset + 4 * sizeof(float), hitSphere.select<8, 1>(4));
+        //cm_svm_block_read(spheresSVMPtr + hitSphereOffset + 4 * sizeof(float) + 4 * sizeof(float), hitSphere.select<4, 1>(8));
 
         vector<float, 3> normal = hitpoint - hitSphere.select<3, 1>(1);
 
@@ -652,7 +658,7 @@ _GENX_ void radiancePathTracing(svmptr_t spheresSVMPtr, const unsigned kSphereCo
         } else {
             // Error here
 
-            printf("Error !!!! \n");
+            printf("Error !!!! refl: %f\n", refl);
         }
 
     }
@@ -716,7 +722,7 @@ RayTracing(svmptr_t cameraSVMPtr, svmptr_t seedSVMPtr, svmptr_t colorSVMPtr, svm
     CmCamera camera;
         
     cm_svm_block_read(cameraSVMPtr + 0, camera);
-    printf("cam : %f, %f, %f, %f, %f, %f, %f, %f, %f\n", camera(6), camera(7), camera(8), camera(9), camera(10), camera(11) ,camera(12), camera(13), camera(14));
+ //   printf("cam : %f, %f, %f, %f, %f, %f, %f, %f, %f\n", camera(6), camera(7), camera(8), camera(9), camera(10), camera(11) ,camera(12), camera(13), camera(14));
 
 
     // W, H, 
