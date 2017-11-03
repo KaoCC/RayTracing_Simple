@@ -26,6 +26,7 @@ add_executable(
     ./src/Utility.cpp
     ./src/Vec.cpp
     ./src/Scene.cpp
+    ./src/Config.cpp
     ./src/OpenCLConfig.cpp
 )
 
