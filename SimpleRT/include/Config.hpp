@@ -6,9 +6,12 @@
 
 class Config {
 
+public:
 
+	virtual void setup() = 0;
+	virtual void execute() = 0;
 
-
+	virtual ~Config() = 0;
 
 };
 

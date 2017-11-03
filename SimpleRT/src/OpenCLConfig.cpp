@@ -922,3 +922,11 @@ void ReInit(const int reallocBuffers) {
 
 	currentSample = 0;
 }
+
+void OpenCLConfig::setup()
+{
+}
+
+void OpenCLConfig::execute()
+{
+}

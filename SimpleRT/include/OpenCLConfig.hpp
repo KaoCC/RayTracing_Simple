@@ -20,4 +20,27 @@ void DefaultSceneSetup();
 
 
 
+class OpenCLConfig : public Config {
+
+
+public:
+
+	// Inherited via Config
+	virtual void setup() override;
+
+	virtual void execute() override;
+
+
+private:
+
+
+
+};
+
+
+
+
+
+
+
 #endif
