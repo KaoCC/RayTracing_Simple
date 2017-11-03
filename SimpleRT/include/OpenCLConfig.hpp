@@ -12,8 +12,8 @@
 #include "Config.hpp"
 
 
-void SetUpOpenCL();
-void FreeOpenCLBuffers();
+//void SetUpOpenCL();
+//void FreeOpenCLBuffers();
 void DefaultSceneSetup();
 
 // tmp
@@ -22,17 +22,21 @@ void DefaultSceneSetup();
 
 class OpenCLConfig : public Config {
 
-
 public:
 
+	OpenCLConfig();
+
 	// Inherited via Config
-	virtual void setup() override;
 
 	virtual void execute() override;
+
+	virtual ~OpenCLConfig();
 
 
 private:
 
+	bool useGPU = false;
+	bool useSVM = false;
 
 
 };

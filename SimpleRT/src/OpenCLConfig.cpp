@@ -93,7 +93,7 @@ void DefaultSceneSetup() {
 	cameraPtr->target = { 0.f, 25.f, 0.f };
 }
 
-void FreeOpenCLBuffers() {
+static void FreeOpenCLBuffers() {
 
 	// openCL Buffer: color, pixel, seed
 
@@ -387,7 +387,7 @@ static void SetUpKernelArguments() {
 
 
 
-void SetUpOpenCL() {
+static void SetUpOpenCL() {
 	cl_device_type dType = useGPU ? CL_DEVICE_TYPE_GPU : CL_DEVICE_TYPE_CPU;
 
 	// Select the platform
@@ -923,10 +923,21 @@ void ReInit(const int reallocBuffers) {
 	currentSample = 0;
 }
 
-void OpenCLConfig::setup()
-{
+
+// -----------
+
+
+OpenCLConfig::OpenCLConfig() {
+	SetUpOpenCL();
 }
+
+
 
 void OpenCLConfig::execute()
 {
+}
+
+
+OpenCLConfig::~OpenCLConfig() {
+	FreeOpenCLBuffers();
 }

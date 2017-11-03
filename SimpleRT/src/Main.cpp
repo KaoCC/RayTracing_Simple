@@ -8,9 +8,14 @@
 #include "SetupGL.hpp"
 #include "OpenCLConfig.hpp"
 
+#include "Config.hpp"
+
 extern int forceWorkSize;
 extern int useGPU;
 extern std::string kernelFileName;
+
+
+
 
 int main(int argc, char *argv[]) {
 
@@ -18,7 +23,10 @@ int main(int argc, char *argv[]) {
 	fprintf(stderr, "Usage: %s <use CPU/GPU (0/1)> <workgroup size (power of 2, 0=default)> <kernel> <width> <height> <scene>\n", argv[0]);
 	fprintf(stderr, "Usage: %s <use CPU/GPU (0/1)> <width> <height>\n", argv[0]);
 
-	SetUpOpenCL();
+
+	std::unique_ptr<Config> frameworkConfig = createConfig(SupportType::OpenCL);
+
+	//SetUpOpenCL();
 
 	if (argc == 1) {
 		DefaultSceneSetup();
@@ -44,7 +52,7 @@ int main(int argc, char *argv[]) {
 	InitGlut(argc, argv, "Ray Tracing Demonstration");	
     glutMainLoop();
 
-	FreeOpenCLBuffers();
+	//FreeOpenCLBuffers();
 
 	return 0;
 }
