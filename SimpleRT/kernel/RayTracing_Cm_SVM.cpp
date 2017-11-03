@@ -4,7 +4,7 @@
 
 
 // tmp
-#include "../include/vec.hpp"
+//#include "../include/vec.hpp"
 // #include "../include/Ray.hpp"
 
 
