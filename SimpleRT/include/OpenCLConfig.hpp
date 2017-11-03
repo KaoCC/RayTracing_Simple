@@ -9,6 +9,7 @@
 #include <CL/cl.h>
 #endif
 
+#include "Config.hpp"
 
 
 void SetUpOpenCL();
