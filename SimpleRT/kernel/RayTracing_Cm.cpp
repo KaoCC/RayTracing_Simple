@@ -53,7 +53,7 @@ const float kEpsilon = 0.01f;
 const unsigned kWidth = 800;
 const unsigned kHeight = 600;
 
-constexpr const unsigned threadCountX = 10;
+constexpr const unsigned threadCountX = 100;
 constexpr const unsigned threadCountY = 100;
 
 

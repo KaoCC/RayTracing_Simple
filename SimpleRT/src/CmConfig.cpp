@@ -69,7 +69,7 @@ static CmBuffer* pixelBuffer;
 static std::unique_ptr<CmSVMAllocator> pCmAllocator;
 
 
-const unsigned kThreadWidth = 10;
+const unsigned kThreadWidth = 100;
 const unsigned kThreadHeight = 100;
 static CmThreadSpace* kernelThreadspace;
 
