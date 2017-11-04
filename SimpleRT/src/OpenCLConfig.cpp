@@ -1286,6 +1286,8 @@ unsigned * OpenCLConfig::getPixels() {
 
 
 
+// -----------
+
 OpenCLConfigBuffer::OpenCLConfigBuffer(int width, int height) : OpenCLConfig(width, height) {
 	allocateBuffer();
 }
@@ -1513,7 +1515,7 @@ void OpenCLConfigBuffer::allocateBuffer() {
 	pCamera = new Camera();
 	pSeeds = new unsigned[pixelCount * 2];
 	pPixels = new unsigned[pixelCount];
-	color = new Vec[pixelCount];
+	pColor = new Vec[pixelCount];
 
 	// CL Buffers
 
@@ -1608,7 +1610,7 @@ void OpenCLConfigBuffer::freeBuffer() {
 	delete pCamera;
 	delete[] pSeeds;
 	delete[] pPixels;
-	delete[] color;
+	delete[] pColor;
 	delete[] pSpheres;
 }
 

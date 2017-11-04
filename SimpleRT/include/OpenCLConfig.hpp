@@ -46,14 +46,15 @@ protected:
 
 	unsigned *pSeeds;
 
-	Vec* color;
+	Vec* pColor;
 	unsigned* pPixels;
 
 	//Camera camera;
 	Camera* pCamera;
 	Sphere* pSpheres;
 
-	Sphere* spheres_host_ptr;
+	//Sphere* spheres_host_ptr;
+
 	unsigned mSphereCount = 0;
 
 
@@ -85,6 +86,10 @@ public:
 
 	OpenCLConfigBuffer(int width, int height);
 
+	// Inherited via OpenCLConfig
+	virtual void sceneSetup(const std::vector<Sphere>& spheres, Vec orig, Vec dir) override;
+
+
 	~OpenCLConfigBuffer();
 
 private:
@@ -107,10 +112,6 @@ private:
 	cl_mem sphereBuffer;
 	cl_mem seedBuffer;
 
-	// Inherited via OpenCLConfig
-	virtual void sceneSetup(const std::vector<Sphere>& spheres, Vec orig, Vec dir) override;
-
-
 };
 
 
@@ -119,6 +120,15 @@ class OpenCLConfigSVM : public OpenCLConfig {
 
 public:
 
+
+private:
+
+
+	virtual void execute() override;
+	virtual void setArguments() override;
+
+	virtual void allocateBuffer() override;
+	virtual void freeBuffer() override;
 
 };
 
