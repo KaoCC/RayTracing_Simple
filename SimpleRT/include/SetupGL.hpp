@@ -8,16 +8,23 @@
 #include <GL/glut.h>
 #endif
 
-extern int width;
-extern int height;
-extern unsigned int *pixels;
-extern unsigned int renderingFlags;
-extern char captionBuffer[256];
+#include "Config.hpp"
 
-void InitGlut(int argc, char *argv[], char *windowTittle);
+extern int glWidth;
+extern int glHeight;
+//extern unsigned int *pixels;
+extern unsigned int renderingFlags;
+//extern char captionBuffer[256];
+
+void InitGlut(int argc, char *argv[], char *windowTittle, Config& config);
 
 void ReadScene(char *);
 void UpdateCamera();
+
+
+
+
+
 
 #endif
 
