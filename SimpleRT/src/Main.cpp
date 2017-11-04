@@ -24,7 +24,7 @@ int main(int argc, char *argv[]) {
 	fprintf(stderr, "Usage: %s <use CPU/GPU (0/1)> <width> <height>\n", argv[0]);
 
 
-	std::unique_ptr<Config> frameworkConfig = createConfig(SupportType::OpenCL);
+	std::unique_ptr<Config> frameworkConfig = createConfig(width, height, SupportType::OpenCL);
 
 	//SetUpOpenCL();
 

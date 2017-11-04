@@ -927,7 +927,7 @@ void ReInit(const int reallocBuffers) {
 // -----------
 
 
-OpenCLConfig::OpenCLConfig() {
+OpenCLConfig::OpenCLConfig(int width, int height) : Config(width, height) {
 	SetUpOpenCL();
 }
 
@@ -935,6 +935,9 @@ OpenCLConfig::OpenCLConfig() {
 
 void OpenCLConfig::execute()
 {
+}
+
+void OpenCLConfig::setArguments() {
 }
 
 

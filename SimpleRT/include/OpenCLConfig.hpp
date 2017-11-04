@@ -24,16 +24,19 @@ class OpenCLConfig : public Config {
 
 public:
 
-	OpenCLConfig();
+	OpenCLConfig(int width, int height);
 
 	// Inherited via Config
 
 	virtual void execute() override;
+	virtual void setArguments() override;
 
 	virtual ~OpenCLConfig();
 
 
 private:
+
+	void allocateBuffer();
 
 	bool useGPU = false;
 	bool useSVM = false;

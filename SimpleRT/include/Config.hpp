@@ -8,9 +8,26 @@ class Config {
 
 public:
 
-	virtual void execute() = 0;
+	Config(int width, int height);
+
+
+	void updateRendering();
+	void setCaptionBuffer(char* buffer);
+
 
 	virtual ~Config() = default;
+
+private:
+	virtual void setArguments() = 0;
+	virtual void execute() = 0;
+
+
+
+	int mWidth = 0;
+	int mHeight = 0;
+
+	int mCurrentSample = 0;
+	char* pCaptionBuff = nullptr;
 
 };
 
@@ -20,7 +37,7 @@ enum class SupportType {
 	OpenCL
 };
 
-std::unique_ptr<Config> createConfig(SupportType type);
+std::unique_ptr<Config> createConfig(int width, int height, SupportType type);
 
 
 
