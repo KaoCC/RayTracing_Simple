@@ -3,6 +3,10 @@
 
 
 #include <memory>
+#include <vector>
+
+struct Sphere;
+class Vec;
 
 class Config {
 
@@ -10,6 +14,9 @@ public:
 
 	Config(int width, int height);
 
+	virtual void sceneSetup(const std::vector<Sphere>& spheres, Vec orig, Vec dir) = 0;
+	virtual void updateCamera() = 0;
+	virtual unsigned* getPixels() = 0;
 
 	void updateRendering();
 	void setCaptionBuffer(char* buffer);
@@ -17,16 +24,23 @@ public:
 
 	virtual ~Config() = default;
 
+
+protected:
+	int mWidth = 0;
+	int mHeight = 0;
+	int mCurrentSample = 0;
+
 private:
+
+
 	virtual void setArguments() = 0;
 	virtual void execute() = 0;
 
+	virtual void allocateBuffer() = 0;
+	virtual void freeBuffer() = 0;
 
 
-	int mWidth = 0;
-	int mHeight = 0;
 
-	int mCurrentSample = 0;
 	char* pCaptionBuff = nullptr;
 
 };

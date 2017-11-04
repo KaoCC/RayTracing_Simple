@@ -11,7 +11,7 @@ std::unique_ptr<Config> createConfig(int width, int height, SupportType type) {
 
 	case SupportType::OpenCL:
 
-		return std::make_unique<OpenCLConfig>(width, height);
+		return std::make_unique<OpenCLConfigBuffer>(width, height);
 
 
 	default:
@@ -44,3 +44,8 @@ void Config::updateRendering() {
 
 
 }
+
+void Config::setCaptionBuffer(char * buffer) {
+	pCaptionBuff = buffer;
+}
+
