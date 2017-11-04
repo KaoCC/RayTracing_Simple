@@ -13,9 +13,13 @@
 #include <vector>
 #include <string>
 
+#include "Camera.hpp"
+
 double WallClockTime();
 
 std::vector<char> ReadKernelSourcesFile(const std::string& fileName);
+
+void computeCameraVariables(Camera* cameraPtr, int width, int height);
 
 #endif
 
