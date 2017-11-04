@@ -75,9 +75,6 @@ protected:
 private:
 
 	bool useGPU = false;
-	bool useSVM = false;
-
-
 };
 
 
