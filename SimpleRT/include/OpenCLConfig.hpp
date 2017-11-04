@@ -68,7 +68,7 @@ protected:
 
 private:
 
-	bool useGPU = false;
+	bool useGPU = true;
 };
 
 
@@ -112,7 +112,11 @@ private:
 class OpenCLConfigSVM : public OpenCLConfig {
 
 public:
+	OpenCLConfigSVM(int width, int height);
 
+	virtual void sceneSetup(const std::vector<Sphere>& spheres, Vec orig, Vec dir) override;
+
+	~OpenCLConfigSVM();
 
 private:
 
