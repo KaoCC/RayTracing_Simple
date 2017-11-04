@@ -9,385 +9,34 @@
 
 
 
-/* Options Flags*/
-int forceWorkSize = 0;
+//
+//void ReInitScene() {
+//	currentSample = 0;
+//
+//	// Reload the scene
+//
+//}
+//
+//void ReInit(const int reallocBuffers) {
+//
+//	if (reallocBuffers) {
+//		FreeOpenCLBuffers();
+//		UpdateCamera();
+//		AllocateOpenCLBuffers();
+//	} else {
+//		UpdateCamera();
+//	}
+//
+//
+//	currentSample = 0;
+//}
+
+
+// -----------
+
+
+OpenCLConfig::OpenCLConfig(int width, int height) : Config(width, height) {
 
-int useGPU = 0;
-bool useCLSVM = false;
-
-
-static unsigned *seeds;
-
-static Vec* color;
-
-//Camera camera;
-Camera* cameraPtr;
-static int currentSample = 0;
-Sphere* spheres;
-Sphere* spheres_host_ptr;
-unsigned sphereCount;
-
-
-// selection parameters
-static const int kPlatformID = 0;
-
-
-/* OpenCL Variables */
-static cl_context context;
-
-
-static cl_command_queue commandQueue;
-static cl_program program;
-static cl_kernel kernel;
-static unsigned workGroupSize = 1;
-std::string kernelFileName = "RayTracing_Kernel.cl";
-
-
-// for CL buffers
-
-// Buffers
-static cl_mem pixelBuffer;
-static cl_mem colorBuffer;
-static cl_mem cameraBuffer;
-static cl_mem sphereBuffer;
-static cl_mem seedBuffer;
-
-
-void DefaultSceneSetup() {
-	spheres_host_ptr = DemoSpheres;
-	sphereCount = sizeof(DemoSpheres) / sizeof(Sphere);
-
-	if (useCLSVM) {
-		spheres = static_cast<Sphere*>(clSVMAlloc(context, CL_MEM_SVM_FINE_GRAIN_BUFFER, sizeof(Sphere) * sphereCount, 0));
-
-		for (unsigned i = 0; i < sphereCount; ++i) {
-			spheres[i] = spheres_host_ptr[i];
-		}
-	} else {
-		spheres = spheres_host_ptr;
-
-		// CL buffer ?
-
-		cl_int status;
-
-		sphereBuffer = clCreateBuffer(
-			context,
-			CL_MEM_READ_ONLY,
-			sizeof(Sphere) * sphereCount,
-			NULL,
-			&status);
-		if (status != CL_SUCCESS) {
-			fprintf(stderr, "Failed to create OpenCL scene buffer: %d\n", status);
-			exit(-1);
-		}
-
-
-	}
-
-
-
-	//vinit(&cameraPtr->orig, 20.f, 100.f, 120.f);
-	cameraPtr->orig = { 20.f, 100.f, 120.f };
-
-	//vinit(&cameraPtr->target, 0.f, 25.f, 0.f);
-	cameraPtr->target = { 0.f, 25.f, 0.f };
-}
-
-void FreeOpenCLBuffers() {
-
-	// openCL Buffer: color, pixel, seed
-
-	if (useCLSVM) {
-		clSVMFree(context, seeds);
-		clSVMFree(context, pixels);
-		clSVMFree(context, color);
-		clSVMFree(context, spheres);
-	} else {
-
-
-		// Release buffers
-
-		// openCL Buffer: color, pixel, seed, camera
-		cl_int status = clReleaseMemObject(colorBuffer);
-		if (status != CL_SUCCESS) {
-			fprintf(stderr, "Failed to release OpenCL color buffer: %d\n", status);
-			exit(-1);
-		}
-
-		status = clReleaseMemObject(pixelBuffer);
-		if (status != CL_SUCCESS) {
-			fprintf(stderr, "Failed to release OpenCL pixel buffer: %d\n", status);
-			exit(-1);
-		}
-
-		status = clReleaseMemObject(seedBuffer);
-		if (status != CL_SUCCESS) {
-			fprintf(stderr, "Failed to release OpenCL seed buffer: %d\n", status);
-			exit(-1);
-		}
-
-		status = clReleaseMemObject(cameraBuffer);
-		if (status != CL_SUCCESS) {
-			fprintf(stderr, "Failed to release OpenCL camera buffer: %d\n", status);
-			exit(-1);
-		}
-
-
-		// delete raw array
-		delete cameraPtr;
-		delete[] seeds;
-		delete[] pixels;
-		delete[] color;
-		//delete[] spheres;
-
-	}
-}
-
-static void AllocateOpenCLBuffers() {
-	const int pixelCount = width * height;
-
-
-
-	if (useCLSVM) {
-
-		cameraPtr = static_cast<Camera*>(clSVMAlloc(context, CL_MEM_SVM_FINE_GRAIN_BUFFER, sizeof(Camera), 0));
-		seeds = static_cast<unsigned*>(clSVMAlloc(context, CL_MEM_SVM_FINE_GRAIN_BUFFER, sizeof(unsigned) * pixelCount * 2, 0));
-		pixels = static_cast<unsigned*>(clSVMAlloc(context, CL_MEM_SVM_FINE_GRAIN_BUFFER, sizeof(unsigned) * pixelCount, 0));
-		color = static_cast<Vec*>(clSVMAlloc(context, CL_MEM_SVM_FINE_GRAIN_BUFFER, sizeof(Vec) * pixelCount, 0));
-
-	} else {
-
-		// raw array space
-		cameraPtr = new Camera();
-		seeds = new unsigned[pixelCount * 2];
-		pixels = new unsigned[pixelCount];
-		color = new Vec[pixelCount];
-
-		// CL Buffers
-
-		cl_int status;
-
-		cameraBuffer = clCreateBuffer(
-			context,
-			CL_MEM_READ_ONLY,
-			sizeof(Camera),
-			NULL,
-			&status);
-		if (status != CL_SUCCESS) {
-			fprintf(stderr, "Failed to create OpenCL camera buffer: %d\n", status);
-			exit(-1);
-		}
-
-		cl_uint sizeBytes = sizeof(Vec) * width * height;
-
-		colorBuffer = clCreateBuffer(
-			context,
-			CL_MEM_READ_WRITE,
-			sizeBytes,
-			NULL,
-			&status);
-		if (status != CL_SUCCESS) {
-			fprintf(stderr, "Failed to create OpenCL colorBuffer: %d\n", status);
-			exit(-1);
-		}
-
-		sizeBytes = sizeof(unsigned int) * width * height;
-		pixelBuffer = clCreateBuffer(
-			context,
-			CL_MEM_WRITE_ONLY,
-			sizeBytes,
-			NULL,
-			&status);
-		if (status != CL_SUCCESS) {
-			fprintf(stderr, "Failed to create OpenCL pixelBuffer: %d\n", status);
-			exit(-1);
-		}
-
-		sizeBytes = sizeof(unsigned) * width * height * 2;
-		seedBuffer = clCreateBuffer(
-			context,
-			CL_MEM_READ_WRITE,
-			sizeBytes,
-			NULL,
-			&status);
-		if (status != CL_SUCCESS) {
-			fprintf(stderr, "Failed to create OpenCL seedBuffer: %d\n", status);
-			exit(-1);
-		}
-
-	}
-
-	// init seed
-	for (int i = 0; i < pixelCount * 2; ++i) {
-		seeds[i] = std::rand();
-		if (seeds[i] < 2)
-			seeds[i] = 2;
-	}
-
-
-}
-
-
-static void SetUpKernelArguments() {
-	/* Set kernel arguments */
-
-	cl_int status;
-	if (useCLSVM) {
-
-		status = clSetKernelArgSVMPointer(
-			kernel,
-			0,
-			color);
-
-		if (status != CL_SUCCESS) {
-			fprintf(stderr, "Failed to set OpenCL arg. #1: %d\n", status);
-			exit(-1);
-		}
-
-		status = clSetKernelArgSVMPointer(
-			kernel,
-			1,
-			seeds);
-		if (status != CL_SUCCESS) {
-			fprintf(stderr, "Failed to set OpenCL arg. #2: %d\n", status);
-			exit(-1);
-		}
-
-		// wait
-		status = clSetKernelArgSVMPointer(
-			kernel,
-			2,
-			spheres);
-		if (status != CL_SUCCESS) {
-			fprintf(stderr, "Failed to set OpenCL arg. #3: %d\n", status);
-			exit(-1);
-		}
-
-		status = clSetKernelArgSVMPointer(
-			kernel,
-			3,
-			cameraPtr);
-		if (status != CL_SUCCESS) {
-			fprintf(stderr, "Failed to set OpenCL arg. #4: %d\n", status);
-			exit(-1);
-		}
-
-	} else {
-
-
-		status = clSetKernelArg(
-			kernel,
-			0,
-			sizeof(cl_mem),
-			(void *)&colorBuffer);
-		if (status != CL_SUCCESS) {
-			fprintf(stderr, "Failed to set OpenCL arg. #1: %d\n", status);
-			exit(-1);
-		}
-
-
-		status = clSetKernelArg(
-			kernel,
-			1,
-			sizeof(cl_mem),
-			(void *)&seedBuffer);
-		if (status != CL_SUCCESS) {
-			fprintf(stderr, "Failed to set OpenCL arg. #2: %d\n", status);
-			exit(-1);
-		}
-
-		status = clSetKernelArg(
-			kernel,
-			2,
-			sizeof(cl_mem),
-			(void *)&sphereBuffer);
-		if (status != CL_SUCCESS) {
-			fprintf(stderr, "Failed to set OpenCL arg. #3: %d\n", status);
-			exit(-1);
-		}
-
-		status = clSetKernelArg(
-			kernel,
-			3,
-			sizeof(cl_mem),
-			(void *)&cameraBuffer);
-		if (status != CL_SUCCESS) {
-			fprintf(stderr, "Failed to set OpenCL arg. #4: %d\n", status);
-			exit(-1);
-		}
-
-	}
-
-	status = clSetKernelArg(
-		kernel,
-		4,
-		sizeof(unsigned int),
-		(void *)&sphereCount);
-	if (status != CL_SUCCESS) {
-		fprintf(stderr, "Failed to set OpenCL arg. #5: %d\n", status);
-		exit(-1);
-	}
-
-	status = clSetKernelArg(
-		kernel,
-		5,
-		sizeof(int),
-		(void *)&width);
-	if (status != CL_SUCCESS) {
-		fprintf(stderr, "Failed to set OpenCL arg. #6: %d\n", status);
-		exit(-1);
-	}
-
-	status = clSetKernelArg(
-		kernel,
-		6,
-		sizeof(int),
-		(void *)&height);
-	if (status != CL_SUCCESS) {
-		fprintf(stderr, "Failed to set OpenCL arg. #7: %d\n", status);
-		exit(-1);
-	}
-
-	status = clSetKernelArg(
-		kernel,
-		7,
-		sizeof(int),
-		(void *)&currentSample);
-	if (status != CL_SUCCESS) {
-		fprintf(stderr, "Failed to set OpenCL arg. #8: %d\n", status);
-		exit(-1);
-	}
-
-
-	if (useCLSVM) {
-
-		status = clSetKernelArgSVMPointer(
-			kernel,
-			8,
-			pixels);
-
-		if (status != CL_SUCCESS) {
-			fprintf(stderr, "Failed to set OpenCL arg. #9: %d\n", status);
-			exit(-1);
-		}
-	} else {
-
-		status = clSetKernelArg(
-			kernel,
-			8,
-			sizeof(cl_mem),
-			(void *)&pixelBuffer);
-		if (status != CL_SUCCESS) {
-			fprintf(stderr, "Failed to set OpenCL arg. #9: %d\n", status);
-			exit(-1);
-		}
-
-	}
-}
-
-
-
-void SetUpOpenCL() {
 	cl_device_type dType = useGPU ? CL_DEVICE_TYPE_GPU : CL_DEVICE_TYPE_CPU;
 
 	// Select the platform
@@ -732,77 +381,88 @@ void SetUpOpenCL() {
 		workGroupSize = forceWorkSize;
 	}
 
-
-
-	/*------------------------------------------------------------------------*/
-
-	AllocateOpenCLBuffers();
-
-	/*------------------------------------------------------------------------*/
 }
 
-static void ExecuteOpenCLKernel() {
+void OpenCLConfig::updateCamera() {
+	computeCameraVariables(pCamera, mWidth, mHeight);
+}
+
+unsigned * OpenCLConfig::getPixels() {
+	return pPixels;
+}
+
+
+
+// -----------------
+
+OpenCLConfigBuffer::OpenCLConfigBuffer(int width, int height) : OpenCLConfig(width, height) {
+	allocateBuffer();
+}
+
+OpenCLConfigBuffer::~OpenCLConfigBuffer() {
+	freeBuffer();
+}
+
+
+void OpenCLConfigBuffer::execute() {
 
 	/* Enqueue a kernel run command */
 	size_t globalThreads[1];
-	globalThreads[0] = width * height;
+	globalThreads[0] = mWidth * mHeight;
 	if (globalThreads[0] % workGroupSize != 0)
 		globalThreads[0] = (globalThreads[0] / workGroupSize + 1) * workGroupSize;
 	size_t localThreads[1];
 	localThreads[0] = workGroupSize;
 
-	if (!useCLSVM) {
-		cl_int status = clEnqueueWriteBuffer(
-			commandQueue,
-			cameraBuffer,
-			CL_TRUE,
-			0,
-			sizeof(Camera),
-			cameraPtr,
-			0,
-			NULL,
-			NULL);
-		if (status != CL_SUCCESS) {
-			fprintf(stderr, "Failed to write the OpenCL camera buffer: %d\n", status);
-			exit(-1);
-		}
 
-		cl_uint sizeBytes = sizeof(unsigned) * width * height * 2;
-
-		status = clEnqueueWriteBuffer(
-			commandQueue,
-			seedBuffer,
-			CL_TRUE,
-			0,
-			sizeBytes,
-			seeds,
-			0,
-			NULL,
-			NULL);
-		if (status != CL_SUCCESS) {
-			fprintf(stderr, "Failed to write the OpenCL seeds buffer: %d\n", status);
-			exit(-1);
-		}
-
-		status = clEnqueueWriteBuffer(
-			commandQueue,
-			sphereBuffer,
-			CL_TRUE,
-			0,
-			sizeof(Sphere) * sphereCount,
-			spheres,
-			0,
-			NULL,
-			NULL);
-		if (status != CL_SUCCESS) {
-			fprintf(stderr, "Failed to write the OpenCL scene buffer: %d\n", status);
-			exit(-1);
-		}
-
-
+	cl_int status = clEnqueueWriteBuffer(
+		commandQueue,
+		cameraBuffer,
+		CL_TRUE,
+		0,
+		sizeof(Camera),
+		pCamera,
+		0,
+		NULL,
+		NULL);
+	if (status != CL_SUCCESS) {
+		fprintf(stderr, "Failed to write the OpenCL camera buffer: %d\n", status);
+		exit(-1);
 	}
 
-	cl_int status = clEnqueueNDRangeKernel(
+	cl_uint sizeBytes = sizeof(unsigned) * mWidth * mHeight * 2;
+
+	status = clEnqueueWriteBuffer(
+		commandQueue,
+		seedBuffer,
+		CL_TRUE,
+		0,
+		sizeBytes,
+		pSeeds,
+		0,
+		NULL,
+		NULL);
+	if (status != CL_SUCCESS) {
+		fprintf(stderr, "Failed to write the OpenCL seeds buffer: %d\n", status);
+		exit(-1);
+	}
+
+	status = clEnqueueWriteBuffer(
+		commandQueue,
+		sphereBuffer,
+		CL_TRUE,
+		0,
+		sizeof(Sphere) * mSphereCount,
+		pSpheres,
+		0,
+		NULL,
+		NULL);
+	if (status != CL_SUCCESS) {
+		fprintf(stderr, "Failed to write the OpenCL scene buffer: %d\n", status);
+		exit(-1);
+	}
+
+	status = clEnqueueNDRangeKernel(
 		commandQueue,
 		kernel,
 		1,
@@ -821,104 +481,439 @@ static void ExecuteOpenCLKernel() {
 
 
 	// Read the result if we are using buffers
-
-	if (!useCLSVM) {
-
-		cl_int status = clEnqueueReadBuffer(
-			commandQueue,
-			pixelBuffer,
-			CL_TRUE,
-			0,
-			width * height * sizeof(unsigned),
-			pixels,
-			0,
-			NULL,
-			NULL);
-		if (status != CL_SUCCESS) {
-			fprintf(stderr, "Failed to read the OpenCL pixel buffer: %d\n", status);
-			exit(-1);
-		}
-
-		cl_uint sizeBytes = sizeof(unsigned) * width * height * 2;
-		status = clEnqueueReadBuffer(
-			commandQueue,
-			seedBuffer,
-			CL_TRUE,
-			0,
-			sizeBytes,
-			seeds,
-			0,
-			NULL,
-			NULL);
-		if (status != CL_SUCCESS) {
-			fprintf(stderr, "Failed to read the OpenCL seeds buffer: %d\n", status);
-			exit(-1);
-		}
-
+	status = clEnqueueReadBuffer(
+		commandQueue,
+		pixelBuffer,
+		CL_TRUE,
+		0,
+		mWidth * mHeight * sizeof(unsigned),
+		pPixels,
+		0,
+		NULL,
+		NULL);
+	if (status != CL_SUCCESS) {
+		fprintf(stderr, "Failed to read the OpenCL pixel buffer: %d\n", status);
+		exit(-1);
 	}
 
+	sizeBytes = sizeof(unsigned) * mWidth * mHeight * 2;
+	status = clEnqueueReadBuffer(
+		commandQueue,
+		seedBuffer,
+		CL_TRUE,
+		0,
+		sizeBytes,
+		pSeeds,
+		0,
+		NULL,
+		NULL);
+	if (status != CL_SUCCESS) {
+		fprintf(stderr, "Failed to read the OpenCL seeds buffer: %d\n", status);
+		exit(-1);
+	}
+
+}
+
+void OpenCLConfigBuffer::setArguments() {
+
+	cl_int status = clSetKernelArg(
+		kernel,
+		0,
+		sizeof(cl_mem),
+		(void *)&colorBuffer);
+	if (status != CL_SUCCESS) {
+		fprintf(stderr, "Failed to set OpenCL arg. #1: %d\n", status);
+		exit(-1);
+	}
+
+
+	status = clSetKernelArg(
+		kernel,
+		1,
+		sizeof(cl_mem),
+		(void *)&seedBuffer);
+	if (status != CL_SUCCESS) {
+		fprintf(stderr, "Failed to set OpenCL arg. #2: %d\n", status);
+		exit(-1);
+	}
+
+	status = clSetKernelArg(
+		kernel,
+		2,
+		sizeof(cl_mem),
+		(void *)&sphereBuffer);
+	if (status != CL_SUCCESS) {
+		fprintf(stderr, "Failed to set OpenCL arg. #3: %d\n", status);
+		exit(-1);
+	}
+
+	status = clSetKernelArg(
+		kernel,
+		3,
+		sizeof(cl_mem),
+		(void *)&cameraBuffer);
+	if (status != CL_SUCCESS) {
+		fprintf(stderr, "Failed to set OpenCL arg. #4: %d\n", status);
+		exit(-1);
+	}
+
+	status = clSetKernelArg(
+		kernel,
+		4,
+		sizeof(unsigned int),
+		(void *)&mSphereCount);
+	if (status != CL_SUCCESS) {
+		fprintf(stderr, "Failed to set OpenCL arg. #5: %d\n", status);
+		exit(-1);
+	}
+
+	status = clSetKernelArg(
+		kernel,
+		5,
+		sizeof(int),
+		(void *)&mWidth);
+	if (status != CL_SUCCESS) {
+		fprintf(stderr, "Failed to set OpenCL arg. #6: %d\n", status);
+		exit(-1);
+	}
+
+	status = clSetKernelArg(
+		kernel,
+		6,
+		sizeof(int),
+		(void *)&mHeight);
+	if (status != CL_SUCCESS) {
+		fprintf(stderr, "Failed to set OpenCL arg. #7: %d\n", status);
+		exit(-1);
+	}
+
+	status = clSetKernelArg(
+		kernel,
+		7,
+		sizeof(int),
+		(void *)&mCurrentSample);
+	if (status != CL_SUCCESS) {
+		fprintf(stderr, "Failed to set OpenCL arg. #8: %d\n", status);
+		exit(-1);
+	}
+
+
+	status = clSetKernelArg(
+		kernel,
+		8,
+		sizeof(cl_mem),
+		(void *)&pixelBuffer);
+	if (status != CL_SUCCESS) {
+		fprintf(stderr, "Failed to set OpenCL arg. #9: %d\n", status);
+		exit(-1);
+	}
+
+}
+
+void OpenCLConfigBuffer::allocateBuffer() {
+
+	const int pixelCount = mWidth * mHeight;
+
+	// raw array space
+	pCamera = new Camera();
+	pSeeds = new unsigned[pixelCount * 2];
+	pPixels = new unsigned[pixelCount];
+	pColor = new Vec[pixelCount];
+
+	// CL Buffers
+
+	cl_int status;
+
+	cameraBuffer = clCreateBuffer(
+		context,
+		CL_MEM_READ_ONLY,
+		sizeof(Camera),
+		NULL,
+		&status);
+	if (status != CL_SUCCESS) {
+		fprintf(stderr, "Failed to create OpenCL camera buffer: %d\n", status);
+		exit(-1);
+	}
+
+	cl_uint sizeBytes = sizeof(Vec) * mWidth * mHeight;
+
+	colorBuffer = clCreateBuffer(
+		context,
+		CL_MEM_READ_WRITE,
+		sizeBytes,
+		NULL,
+		&status);
+	if (status != CL_SUCCESS) {
+		fprintf(stderr, "Failed to create OpenCL colorBuffer: %d\n", status);
+		exit(-1);
+	}
+
+	sizeBytes = sizeof(unsigned int) * mWidth * mHeight;
+	pixelBuffer = clCreateBuffer(
+		context,
+		CL_MEM_WRITE_ONLY,
+		sizeBytes,
+		NULL,
+		&status);
+	if (status != CL_SUCCESS) {
+		fprintf(stderr, "Failed to create OpenCL pixelBuffer: %d\n", status);
+		exit(-1);
+	}
+
+	sizeBytes = sizeof(unsigned) * mWidth * mHeight * 2;
+	seedBuffer = clCreateBuffer(
+		context,
+		CL_MEM_READ_WRITE,
+		sizeBytes,
+		NULL,
+		&status);
+	if (status != CL_SUCCESS) {
+		fprintf(stderr, "Failed to create OpenCL seedBuffer: %d\n", status);
+		exit(-1);
+	}
+
+	//	// init seed
+	for (int i = 0; i < pixelCount * 2; ++i) {
+		pSeeds[i] = std::rand();
+		if (pSeeds[i] < 2)
+			pSeeds[i] = 2;
+	}
+
+}
+
+void OpenCLConfigBuffer::freeBuffer() {
+
+	// openCL Buffer: color, pixel, seed, camera
+	cl_int status = clReleaseMemObject(colorBuffer);
+	if (status != CL_SUCCESS) {
+		fprintf(stderr, "Failed to release OpenCL color buffer: %d\n", status);
+		exit(-1);
+	}
+
+	status = clReleaseMemObject(pixelBuffer);
+	if (status != CL_SUCCESS) {
+		fprintf(stderr, "Failed to release OpenCL pixel buffer: %d\n", status);
+		exit(-1);
+	}
+
+	status = clReleaseMemObject(seedBuffer);
+	if (status != CL_SUCCESS) {
+		fprintf(stderr, "Failed to release OpenCL seed buffer: %d\n", status);
+		exit(-1);
+	}
+
+	status = clReleaseMemObject(cameraBuffer);
+	if (status != CL_SUCCESS) {
+		fprintf(stderr, "Failed to release OpenCL camera buffer: %d\n", status);
+		exit(-1);
+	}
+
+
+	// delete raw array
+	delete pCamera;
+	delete[] pSeeds;
+	delete[] pPixels;
+	delete[] pColor;
+	delete[] pSpheres;
+}
+
+void OpenCLConfigBuffer::sceneSetup(const std::vector<Sphere>& spheres, Vec orig, Vec target) {
+
+	pSpheres = new Sphere[spheres.size()];
+	mSphereCount = spheres.size();
+
+	for (int i = 0; i < mSphereCount; ++i) {
+		pSpheres[i] = spheres[i];
+	}
 	
-}
-
-
-void UpdateRendering() {
-	double startTime = WallClockTime();
-	int startSampleCount = currentSample;
-
-	SetUpKernelArguments();
-
-	//--------------------------------------------------------------------------
-
-	//if (1 /*currentSample < 200*/) {
-
-	ExecuteOpenCLKernel();
-	++currentSample;
-
-	//	printf("done: %d\n", currentSample);
-	//} else {
-	//	/* After first 20 samples, continue to execute kernels for more and more time */
-	//	const float k = min(currentSample - 20, 100) / 100.f;
-	//	const float tresholdTime = 0.5f * k;
-	//	while (1) {
-	//		ExecuteKernel();
-	//		clFinish(commandQueue);
-	//		currentSample++;
-
-	//		const float elapsedTime = WallClockTime() - startTime;
-	//		if (elapsedTime > tresholdTime)
-	//			break;
-	//	}
-	//}
-
-	//--------------------------------------------------------------------------
-
-	/*===========================================================================*/
-
-	const double elapsedTime = WallClockTime() - startTime;
-	const int samples = currentSample - startSampleCount;
-	const double sampleSec = samples * height * width / elapsedTime;
-	sprintf(captionBuffer, "Rendering time %.3f sec (pass %d)  Sample/sec  %.1fK\n",
-		elapsedTime, currentSample, sampleSec / 1000.f);
-}
-
-
-void ReInitScene() {
-	currentSample = 0;
-
-	// Reload the scene
-
-}
-
-void ReInit(const int reallocBuffers) {
-
-	if (reallocBuffers) {
-		FreeOpenCLBuffers();
-		UpdateCamera();
-		AllocateOpenCLBuffers();
-	} else {
-		UpdateCamera();
+	// CL buffer ?
+	
+	cl_int status;
+	sphereBuffer = clCreateBuffer(
+		context,
+		CL_MEM_READ_ONLY,
+		sizeof(Sphere) * mSphereCount,
+		NULL,
+		&status);
+	if (status != CL_SUCCESS) {
+		fprintf(stderr, "Failed to create OpenCL scene buffer: %d\n", status);
+		exit(-1);
 	}
 
 
-	currentSample = 0;
+	pCamera->orig = orig;
+	pCamera->target = target;
+
+}
+
+// -------------------
+
+OpenCLConfigSVM::OpenCLConfigSVM(int width, int height) : OpenCLConfig(width, height) {
+	allocateBuffer();
+}
+
+void OpenCLConfigSVM::sceneSetup(const std::vector<Sphere>& spheres, Vec orig, Vec target) {
+
+	pSpheres = static_cast<Sphere*>(clSVMAlloc(context, CL_MEM_SVM_FINE_GRAIN_BUFFER, sizeof(Sphere) * spheres.size(), 0));
+	mSphereCount = spheres.size();
+	
+	for (unsigned i = 0; i < spheres.size(); ++i) {
+		pSpheres[i] = spheres[i];
+	}
+
+	pCamera->orig = orig;
+	pCamera->target = target;
+}
+
+OpenCLConfigSVM::~OpenCLConfigSVM() {
+	freeBuffer();
+}
+
+void OpenCLConfigSVM::execute() {
+
+	/* Enqueue a kernel run command */
+	size_t globalThreads[1];
+	globalThreads[0] = mWidth * mHeight;
+	if (globalThreads[0] % workGroupSize != 0)
+		globalThreads[0] = (globalThreads[0] / workGroupSize + 1) * workGroupSize;
+	size_t localThreads[1];
+	localThreads[0] = workGroupSize;
+
+	cl_int status = clEnqueueNDRangeKernel(
+		commandQueue,
+		kernel,
+		1,
+		NULL,
+		globalThreads,
+		localThreads,
+		0,
+		NULL,
+		NULL);
+	if (status != CL_SUCCESS) {
+		fprintf(stderr, "Failed to enqueue OpenCL work: %d\n", status);
+		exit(-1);
+	}
+	
+	clFinish(commandQueue);
+
+}
+
+void OpenCLConfigSVM::setArguments() {
+	cl_int status = clSetKernelArgSVMPointer(
+		kernel,
+		0,
+		pColor);
+	
+	if (status != CL_SUCCESS) {
+		fprintf(stderr, "Failed to set OpenCL arg. #1: %d\n", status);
+		exit(-1);
+	}
+	
+	status = clSetKernelArgSVMPointer(
+		kernel,
+		1,
+		pSeeds);
+	if (status != CL_SUCCESS) {
+		fprintf(stderr, "Failed to set OpenCL arg. #2: %d\n", status);
+		exit(-1);
+	}
+	
+	// wait
+	status = clSetKernelArgSVMPointer(
+		kernel,
+		2,
+		pSpheres);
+	if (status != CL_SUCCESS) {
+		fprintf(stderr, "Failed to set OpenCL arg. #3: %d\n", status);
+		exit(-1);
+	}
+	
+	status = clSetKernelArgSVMPointer(
+		kernel,
+		3,
+		pCamera);
+	if (status != CL_SUCCESS) {
+		fprintf(stderr, "Failed to set OpenCL arg. #4: %d\n", status);
+		exit(-1);
+	}
+
+	status = clSetKernelArg(
+		kernel,
+		4,
+		sizeof(unsigned int),
+		(void *)&mSphereCount);
+	if (status != CL_SUCCESS) {
+		fprintf(stderr, "Failed to set OpenCL arg. #5: %d\n", status);
+		exit(-1);
+	}
+	
+	status = clSetKernelArg(
+		kernel,
+		5,
+		sizeof(int),
+		(void *)&mWidth);
+	if (status != CL_SUCCESS) {
+		fprintf(stderr, "Failed to set OpenCL arg. #6: %d\n", status);
+		exit(-1);
+	}
+	
+	status = clSetKernelArg(
+		kernel,
+		6,
+		sizeof(int),
+		(void *)&mHeight);
+	if (status != CL_SUCCESS) {
+		fprintf(stderr, "Failed to set OpenCL arg. #7: %d\n", status);
+		exit(-1);
+	}
+	
+	status = clSetKernelArg(
+		kernel,
+		7,
+		sizeof(int),
+		(void *)&mCurrentSample);
+	if (status != CL_SUCCESS) {
+		fprintf(stderr, "Failed to set OpenCL arg. #8: %d\n", status);
+		exit(-1);
+	}
+
+	status = clSetKernelArgSVMPointer(
+		kernel,
+		8,
+		pPixels);
+	
+	if (status != CL_SUCCESS) {
+		fprintf(stderr, "Failed to set OpenCL arg. #9: %d\n", status);
+		exit(-1);
+	}
+
+
+}
+
+void OpenCLConfigSVM::allocateBuffer() {
+
+	const int pixelCount = mWidth * mHeight;
+
+	pCamera = static_cast<Camera*>(clSVMAlloc(context, CL_MEM_SVM_FINE_GRAIN_BUFFER, sizeof(Camera), 0));
+	pSeeds = static_cast<unsigned*>(clSVMAlloc(context, CL_MEM_SVM_FINE_GRAIN_BUFFER, sizeof(unsigned) * pixelCount * 2, 0));
+	pPixels = static_cast<unsigned*>(clSVMAlloc(context, CL_MEM_SVM_FINE_GRAIN_BUFFER, sizeof(unsigned) * pixelCount, 0));
+	pColor = static_cast<Vec*>(clSVMAlloc(context, CL_MEM_SVM_FINE_GRAIN_BUFFER, sizeof(Vec) * pixelCount, 0));
+
+
+	// init seed
+	for (int i = 0; i < pixelCount * 2; ++i) {
+		pSeeds[i] = std::rand();
+		if (pSeeds[i] < 2)
+			pSeeds[i] = 2;
+	}	
+
+}
+
+void OpenCLConfigSVM::freeBuffer() {
+
+	clSVMFree(context, pCamera);
+	clSVMFree(context, pSeeds);
+	clSVMFree(context, pPixels);
+	clSVMFree(context, pColor);
+	clSVMFree(context, pSpheres);
 }

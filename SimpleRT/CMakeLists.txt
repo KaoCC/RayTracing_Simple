@@ -19,12 +19,14 @@ add_executable(
     ./include/Utility.hpp
     ./include/Vec.hpp
     ./include/OpenCLConfig.hpp
+    ./include/Config.hpp
 
     ./src/Main.cpp
     ./src/SetupGL.cpp
     ./src/Utility.cpp
     ./src/Vec.cpp
     ./src/Scene.cpp
+    ./src/Config.cpp
     ./src/OpenCLConfig.cpp
 )
 

@@ -4,6 +4,8 @@
 
 #include "Sphere.hpp"
 
+#include <vector>
+
 //Sphere DemoSpheres[] = {
 //	{1000, {0, -1000, 0}, {0, 0, 0}, {0.75f, 0.75f, 0.75f}, Refl::DIFF},
 //	{12, {40, 20, 0}, {0, 0, 0}, {0.9f, 0.f, 0.f}, Refl::REFR},
@@ -14,7 +16,8 @@
 //};
 
 
-extern Sphere DemoSpheres[6];
+// tmp
+extern std::vector<Sphere> DemoSpheres;
 
 #endif
 
