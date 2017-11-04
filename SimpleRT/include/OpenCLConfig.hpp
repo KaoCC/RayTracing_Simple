@@ -45,18 +45,11 @@ protected:
 	int forceWorkSize = 0;
 
 	unsigned *pSeeds;
-
 	Vec* pColor;
 	unsigned* pPixels;
-
-	//Camera camera;
 	Camera* pCamera;
 	Sphere* pSpheres;
-
-	//Sphere* spheres_host_ptr;
-
 	unsigned mSphereCount = 0;
-
 
 	// selection parameters
 	const int kPlatformID = 0;
