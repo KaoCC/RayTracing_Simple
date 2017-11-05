@@ -14,12 +14,15 @@
 #include <string>
 
 #include "Camera.hpp"
+#include "Sphere.hpp"
 
 double WallClockTime();
 
 std::vector<char> ReadKernelSourcesFile(const std::string& fileName);
 
 void computeCameraVariables(Camera* cameraPtr, int width, int height);
+
+std::vector<Sphere> readScene(const std::string& fileName, Vec& orig, Vec& target);
 
 #endif
 
