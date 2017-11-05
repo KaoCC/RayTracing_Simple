@@ -21,9 +21,7 @@ public:
 	void updateRendering();
 	void setCaptionBuffer(char* buffer);
 
-
 	virtual ~Config() = default;
-
 
 protected:
 	int mWidth = 0;
@@ -35,11 +33,8 @@ private:
 
 	virtual void setArguments() = 0;
 	virtual void execute() = 0;
-
 	virtual void allocateBuffer() = 0;
 	virtual void freeBuffer() = 0;
-
-
 
 	char* pCaptionBuff = nullptr;
 

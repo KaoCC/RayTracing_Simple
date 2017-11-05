@@ -33,13 +33,11 @@ public:
 	OpenCLConfig(int width, int height);
 
 	virtual void updateCamera() override;
-
 	virtual unsigned * getPixels() override;
 
 	virtual ~OpenCLConfig() = default;
 
 protected:
-
 
 	int forceWorkSize = 0;
 
@@ -79,15 +77,12 @@ public:
 
 	virtual void sceneSetup(const std::vector<Sphere>& spheres, Vec orig, Vec dir) override;
 
-
 	~OpenCLConfigBuffer();
 
 private:
 
-
 	virtual void execute() override;
 	virtual void setArguments() override;
-
 	virtual void allocateBuffer() override;
 	virtual void freeBuffer() override;
 
@@ -113,10 +108,8 @@ public:
 
 private:
 
-
 	virtual void execute() override;
 	virtual void setArguments() override;
-
 	virtual void allocateBuffer() override;
 	virtual void freeBuffer() override;
 

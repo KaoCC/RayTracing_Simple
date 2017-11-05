@@ -98,3 +98,4 @@ void InitGlut(int argc, char *argv[], char *windowTittle, Config& config) {
 	glLoadIdentity();
 	glOrtho(0.f, glWidth - 1.f, 0.f, glHeight - 1.f, -1.f, 1.f);
 }
+
