@@ -4,6 +4,7 @@
 #include <cmath>
 
 #include "Utility.hpp"
+#include "Sphere.hpp"
 
 //#define NULL 0
 
@@ -20,6 +21,7 @@ double WallClockTime()
 #else
 	Unsupported Platform
 #endif
+
 }
 
 std::vector<char> ReadKernelSourcesFile(const std::string& fileName) { 
@@ -62,108 +64,98 @@ std::vector<char> ReadKernelSourcesFile(const std::string& fileName) {
 	 fclose(file); 
 	
 	
-	 return src; 
-
+	 return src;
 }
-
-
 
 
 void computeCameraVariables(Camera* cameraPtr, int width, int height) {
 
-	//vsub(&cameraPtr->dir, &cameraPtr->target, &cameraPtr->orig);
 	cameraPtr->dir = cameraPtr->target - cameraPtr->orig;
-
-	//vnorm(&cameraPtr->dir);
 	cameraPtr->dir.norm();
 
 	const Vec up{ 0.f, 1.f, 0.f };
 	const float fov = static_cast<float>((M_PI / 180.f) * 45.f);
-	//vxcross(&cameraPtr->x, &cameraPtr->dir, &up);
+
 	cameraPtr->x = cameraPtr->dir.cross(up);
-
-	//vnorm(&cameraPtr->x);
 	cameraPtr->x.norm();
-
-	//vsmul(&cameraPtr->x, width * fov / height, &cameraPtr->x);
 	cameraPtr->x = cameraPtr->x * (width * fov / height);
-
-	//vxcross(&cameraPtr->y, &cameraPtr->x, &cameraPtr->dir);
 	cameraPtr->y = cameraPtr->x.cross(cameraPtr->dir);
-
-	//vnorm(&cameraPtr->y);
 	cameraPtr->y.norm();
-
-	//vsmul(&cameraPtr->y, fov, &cameraPtr->y);
 	cameraPtr->y = cameraPtr->y * fov;
 }
 
 	 
 
-//
-//void ReadScene(char *fileName) {
-//	fprintf(stderr, "Reading scene: %s\n", fileName);
-//
-//	FILE *f = fopen(fileName, "r");
-//	if (!f) {
-//		fprintf(stderr, "Failed to open file: %s\n", fileName);
-//		exit(-1);
-//	}
-//
-//	/* Read the camera position */
-//	int c = fscanf(f, "camera %f %f %f  %f %f %f\n",
-//		&cameraPtr->orig.x, &cameraPtr->orig.y, &cameraPtr->orig.z,
-//		&cameraPtr->target.x, &cameraPtr->target.y, &cameraPtr->target.z);
-//	if (c != 6) {
-//		fprintf(stderr, "Failed to read 6 camera parameters: %d\n", c);
-//		exit(-1);
-//	}
-//
-//	/* Read the sphere count */
-//	c = fscanf(f, "size %u\n", &sphereCount);
-//	if (c != 1) {
-//		fprintf(stderr, "Failed to read sphere count: %d\n", c);
-//		exit(-1);
-//	}
-//	fprintf(stderr, "Scene size: %d\n", sphereCount);
-//
-//	/* Read all spheres */
-//
-//	//spheres = (Sphere *)clSVMAlloc(context, CL_MEM_SVM_FINE_GRAIN_BUFFER,sizeof(Sphere) * sphereCount, 0);
-//	spheres_host_ptr = static_cast<Sphere*>(malloc(sizeof(Sphere) * sphereCount));
-//
-//	// MAY HAVE BUG HERE !
-//#pragma message ( "MAY HAVE BUG HERE ! (ReadScene)" )
-//
-//	for (unsigned int i = 0; i < sphereCount; i++) {
-//		Sphere *s = &spheres_host_ptr[i];
-//		int mat;
-//		int c = fscanf(f, "sphere %f  %f %f %f  %f %f %f  %f %f %f  %d\n",
-//			&s->rad,
-//			&s->p.x, &s->p.y, &s->p.z,
-//			&s->e.x, &s->e.y, &s->e.z,
-//			&s->c.x, &s->c.y, &s->c.z,
-//			&mat);
-//		switch (mat) {
-//		case 0:
-//			s->refl = Refl::DIFF;
-//			break;
-//		case 1:
-//			s->refl = Refl::SPEC;
-//			break;
-//		case 2:
-//			s->refl = Refl::REFR;
-//			break;
-//		default:
-//			fprintf(stderr, "Failed to read material type for sphere #%d: %d\n", i, mat);
-//			exit(-1);
-//			break;
-//		}
-//		if (c != 11) {
-//			fprintf(stderr, "Failed to read sphere #%d: %d\n", i, c);
-//			exit(-1);
-//		}
-//	}
-//
-//	fclose(f);
-//}
+
+std::vector<Sphere> readScene(const std::string& fileName, Vec& orig, Vec& target) {
+
+	fprintf(stderr, "Reading scene: %s\n", fileName.c_str());
+
+	FILE *f = std::fopen(fileName.c_str(), "r");
+	if (!f) {
+		fprintf(stderr, "Failed to open file: %s\n", fileName.c_str());
+		exit(-1);
+	}
+
+	/* Read the camera position */
+	int c = std::fscanf(f, "camera %f %f %f  %f %f %f\n",
+		&orig.x, &orig.y, &orig.z,
+		&target.x, &target.y, &target.z);
+	if (c != 6) {
+		fprintf(stderr, "Failed to read 6 camera parameters: %d\n", c);
+		exit(-1);
+	}
+
+	std::size_t sphereCount = 0;
+
+	/* Read the sphere count */
+	c = std::fscanf(f, "size %u\n", &sphereCount);
+	if (c != 1) {
+		fprintf(stderr, "Failed to read sphere count: %d\n", c);
+		exit(-1);
+	}
+	fprintf(stderr, "Scene size: %d\n", sphereCount);
+
+	/* Read all spheres */
+	std::vector<Sphere> spheres(sphereCount);
+
+	for (unsigned i = 0; i < sphereCount; ++i) {
+
+		Sphere s;
+		int mat = 0;
+		int c = std::fscanf(f, "sphere %f  %f %f %f  %f %f %f  %f %f %f  %d\n",
+			&s.rad,
+			&s.p.x, &s.p.y, &s.p.z,
+			&s.e.x, &s.e.y, &s.e.z,
+			&s.c.x, &s.c.y, &s.c.z,
+			&mat);
+
+		switch (mat) {
+		case 0:
+			s.refl = Refl::DIFF;
+			break;
+		case 1:
+			s.refl = Refl::SPEC;
+			break;
+		case 2:
+			s.refl = Refl::REFR;
+			break;
+		default:
+			fprintf(stderr, "Failed to read material type for sphere #%d: %d\n", i, mat);
+			exit(-1);
+			break;
+		}
+
+		if (c != 11) {
+			fprintf(stderr, "Failed to read sphere #%d: %d\n", i, c);
+			exit(-1);
+		}
+
+		spheres.push_back(s);	
+	}
+
+	std::fclose(f);
+
+	return spheres;
+}
+

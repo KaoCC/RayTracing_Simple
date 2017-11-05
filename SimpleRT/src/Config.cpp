@@ -8,17 +8,13 @@
 std::unique_ptr<Config> createConfig(int width, int height, SupportType type) {
 
 	switch (type) {
-
 	case SupportType::OpenCL:
 
 		return std::make_unique<OpenCLConfigSVM>(width, height);
 
-
 	default:
-		throw "Error";
-
+		throw std::runtime_error("Unsupport Type");
 	}
-
 
 }
 
