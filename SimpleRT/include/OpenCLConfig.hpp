@@ -34,7 +34,6 @@ public:
 
 	virtual void updateCamera() override;
 
-	// Inherited via OpenCLConfig
 	virtual unsigned * getPixels() override;
 
 	virtual ~OpenCLConfig() = default;
@@ -57,7 +56,6 @@ protected:
 
 	/* OpenCL Variables */
 	cl_context context;
-
 	cl_command_queue commandQueue;
 	cl_program program;
 	cl_kernel kernel;
@@ -79,7 +77,6 @@ public:
 
 	OpenCLConfigBuffer(int width, int height);
 
-	// Inherited via OpenCLConfig
 	virtual void sceneSetup(const std::vector<Sphere>& spheres, Vec orig, Vec dir) override;
 
 
@@ -88,17 +85,13 @@ public:
 private:
 
 
-	// Inherited via OpenCLConfig
-
 	virtual void execute() override;
 	virtual void setArguments() override;
 
 	virtual void allocateBuffer() override;
 	virtual void freeBuffer() override;
 
-
-
-	//// Buffers
+	// Buffers
 	cl_mem pixelBuffer;
 	cl_mem colorBuffer;
 	cl_mem cameraBuffer;

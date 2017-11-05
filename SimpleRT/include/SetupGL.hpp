@@ -12,9 +12,8 @@
 
 extern int glWidth;
 extern int glHeight;
-//extern unsigned int *pixels;
 extern unsigned int renderingFlags;
-//extern char captionBuffer[256];
+
 
 void InitGlut(int argc, char *argv[], char *windowTittle, Config& config);
 

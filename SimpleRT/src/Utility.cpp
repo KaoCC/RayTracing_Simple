@@ -71,30 +71,23 @@ std::vector<char> ReadKernelSourcesFile(const std::string& fileName) {
 
 void computeCameraVariables(Camera* cameraPtr, int width, int height) {
 
-	//vsub(&cameraPtr->dir, &cameraPtr->target, &cameraPtr->orig);
 	cameraPtr->dir = cameraPtr->target - cameraPtr->orig;
 
-	//vnorm(&cameraPtr->dir);
 	cameraPtr->dir.norm();
 
 	const Vec up{ 0.f, 1.f, 0.f };
 	const float fov = static_cast<float>((M_PI / 180.f) * 45.f);
-	//vxcross(&cameraPtr->x, &cameraPtr->dir, &up);
+
 	cameraPtr->x = cameraPtr->dir.cross(up);
 
-	//vnorm(&cameraPtr->x);
 	cameraPtr->x.norm();
 
-	//vsmul(&cameraPtr->x, width * fov / height, &cameraPtr->x);
 	cameraPtr->x = cameraPtr->x * (width * fov / height);
 
-	//vxcross(&cameraPtr->y, &cameraPtr->x, &cameraPtr->dir);
 	cameraPtr->y = cameraPtr->x.cross(cameraPtr->dir);
 
-	//vnorm(&cameraPtr->y);
 	cameraPtr->y.norm();
 
-	//vsmul(&cameraPtr->y, fov, &cameraPtr->y);
 	cameraPtr->y = cameraPtr->y * fov;
 }
 

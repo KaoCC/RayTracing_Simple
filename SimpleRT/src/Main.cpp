@@ -21,7 +21,6 @@ int main(int argc, char *argv[]) {
 
 	std::unique_ptr<Config> frameworkConfig = createConfig(glWidth, glHeight, SupportType::OpenCL);
 
-	//SetUpOpenCL();
 
 	//if (argc == 1) {
 	//	DefaultSceneSetup();
@@ -42,7 +41,6 @@ int main(int argc, char *argv[]) {
 	//	exit(EXIT_FAILURE);
 	//}
 
-//	UpdateCamera();
 
 
 	frameworkConfig->sceneSetup(DemoSpheres, { 20.f, 100.f, 120.f }, { 0.f, 25.f, 0.f });		// test
@@ -53,7 +51,6 @@ int main(int argc, char *argv[]) {
 	InitGlut(argc, argv, "Ray Tracing Demonstration", *frameworkConfig);
     glutMainLoop();
 
-	//FreeOpenCLBuffers();
 
 	return 0;
 }
