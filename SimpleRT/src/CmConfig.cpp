@@ -7,18 +7,14 @@
 #include <vector>
 
 
-#include "Camera.hpp"
-#include "Scene.hpp"
-#include "SetupGL.hpp"
-#include "Utility.hpp"
-#include "Sphere.hpp"
 
 
-#include "CmSVMAllocator.hpp"
+
+
 
 extern std::vector<char> ReadKernelSourcesFile(const std::string&);
 
-#include "cm_rt.h"
+
 
 
 // simple impl.
@@ -39,45 +35,15 @@ float clamp(float x, float low, float high) {
 
 // ------------------------
 
-// Cm stuff
-static CmDevice* pCmDev;
-static CmQueue* pCmQueue;
 
 
-static bool useCmSVM = false;
 
-static const std::string isaFileName = useCmSVM ? "RayTracing_Cm_SVM.isa" : "RayTracing_Cm.isa";
 
-// host arrays
-static unsigned* hostSeeds;
-static Vec* hostColor;
-Camera* hostCamera;
-Sphere* hostSpheres;
-Sphere* defaultSpheres;
-unsigned  defaultSphereCount = 0;
-unsigned* hostPixels;
 
-// Cm buffers
-
-static CmBuffer* cameraBuffer;
-static CmBuffer* seedsBuffer;
-static CmBuffer* colorBuffer;
-static CmBuffer* spheresBuffer;
-static CmBuffer* pixelBuffer;
-
-// cm SVM Allocator
-static std::unique_ptr<CmSVMAllocator> pCmAllocator;
 
 
 const unsigned kThreadWidth = 100;
 const unsigned kThreadHeight = 100;
-static CmThreadSpace* kernelThreadspace;
-
-static CmTask* pCmTask;
-
-static CmEvent* pCmEvent = nullptr;
-
-static CmKernel* cmKernel = nullptr;
 
 
 static unsigned currentSampleCount = 0;
@@ -98,24 +64,99 @@ constexpr const unsigned kColorFloatCount = 3 + 1;	// Vec(3) + 1 float padding
 
 // --------------
 
-// tmp
-void SetupCmDefaultScene() {
 
-	defaultSpheres = DemoSpheres;
-	defaultSphereCount = sizeof(DemoSpheres) / sizeof(Sphere);
 
-	if (useCmSVM) {
-		hostSpheres = static_cast<Sphere*>(pCmAllocator->allocate(sizeof(float) * kSphereFloatCount * defaultSphereCount));
-	} else {
 
-		hostSpheres = reinterpret_cast<Sphere*>(new float[kSphereFloatCount * defaultSphereCount]);		// leak
-		pCmDev->CreateBuffer(sizeof(float) * kSphereFloatCount * defaultSphereCount, spheresBuffer); // Sphere buffer
+//void UpdateRenderingCm() {
+//	double startTime = WallClockTime();
+//	int startSampleCount = currentSampleCount;
+//
+//
+//	// tmp
+//	cmKernel->SetKernelArg(6, sizeof(unsigned), &currentSampleCount);
+//
+//	ExecuteCmKernel();
+//	++currentSampleCount;
+//
+//
+//	const double elapsedTime = WallClockTime() - startTime;
+//	const int samples = currentSampleCount - startSampleCount;
+//	const double sampleSec = samples * height * width / elapsedTime;
+//	sprintf(captionBuffer, "Rendering time %.3f sec (pass %d)  Sample/sec  %.1fK\n",
+//		elapsedTime, currentSampleCount, sampleSec / 1000.f);
+//}
 
+//-----------
+
+
+
+
+CmConfig::CmConfig(int width, int height) : Config(width, height) {
+
+	int result = 0;
+
+	pCmDev = nullptr;
+	UINT version = 0;
+
+	result = CreateCmDevice(pCmDev, version);
+	if (result != CM_SUCCESS) {
+		printf("CmDevice creation error");
+		exit(EXIT_FAILURE);
+	}
+
+	if (version < CM_1_0) {
+		printf(" The runtime API version is later than runtime DLL version");
+		exit(EXIT_FAILURE);
+	}
+
+	FILE* pISA = fopen(isaFileName.c_str(), "rb");
+	if (pISA == NULL) {
+		perror("isa file");
+		exit(EXIT_FAILURE);
+	}
+
+	std::vector<char> pCommonISABuffer = ReadKernelSourcesFile(isaFileName);
+
+	CmProgram* pCmProgram = nullptr;
+	result = pCmDev->LoadProgram(reinterpret_cast<void*>(pCommonISABuffer.data()), pCommonISABuffer.size(), pCmProgram);		// check the size if error !
+	if (result != CM_SUCCESS) {
+		perror("CM LoadProgram error");
+		exit(EXIT_FAILURE);
 	}
 
 
-	// assign Sphere value 
-	// ** convert to flaot pointer first
+	// Create Kernel
+	// CmKernel* cmKernel = nullptr;
+	result = pCmDev->CreateKernel(pCmProgram, CM_KERNEL_FUNCTION(RayTracing), pCmKernel);
+	if (result != CM_SUCCESS) {
+		perror("LoadProgram error");
+		exit(EXIT_FAILURE);
+	}
+
+
+
+	pCmDev->CreateThreadSpace(kThreadWidth, kThreadHeight, kernelThreadspace);
+	pCmKernel->SetThreadCount(kThreadWidth * kThreadHeight);
+
+
+	// create Task
+	pCmDev->CreateTask(pCmTask);
+	pCmTask->AddKernel(pCmKernel);
+
+	// create Queue
+	pCmDev->CreateQueue(pCmQueue);
+
+}
+
+void CmConfig::updateCamera() {
+}
+
+unsigned * CmConfig::getPixels() {
+	return hostPixels;
+}
+
+void CmConfig::setSceneArguemnts() {
+
 
 	float* tmpSphereBuf = reinterpret_cast<float*>(hostSpheres);
 
@@ -170,71 +211,130 @@ void SetupCmDefaultScene() {
 
 
 
-void AllocateCmBuffers() {
-	const int pixelCount = width * height;
+CmConfigBuffer::CmConfigBuffer(int width, int height) : CmConfig(width, height) {
+	allocateBuffer();
+}
+
+void CmConfigBuffer::sceneSetup(const std::vector<Sphere>& spheres, Vec orig, Vec dir) {
+
+	defaultSpheres = spheres.data();
+	defaultSphereCount = spheres.size();
+
+	hostSpheres = reinterpret_cast<Sphere*>(new float[kSphereFloatCount * defaultSphereCount]);		// leak
+	pCmDev->CreateBuffer(sizeof(float) * kSphereFloatCount * defaultSphereCount, spheresBuffer); // Sphere buffer
+
+	setSceneArguemnts();
+}
+
+CmConfigBuffer::~CmConfigBuffer() {
+	// yet to be done
+}
+
+void CmConfigBuffer::setArguments() {
+
+	// get index 
+	// 
+	SurfaceIndex* cameraIndex;
+	SurfaceIndex* seedsIndex;
+	SurfaceIndex* colorIndex;
+	SurfaceIndex* spheresIndex;
+	SurfaceIndex* pixelIndex;
+
+	cameraBuffer->GetIndex(cameraIndex);
+	seedsBuffer->GetIndex(seedsIndex);
+	colorBuffer->GetIndex(colorIndex);
+	spheresBuffer->GetIndex(spheresIndex);
+	pixelBuffer->GetIndex(pixelIndex);
 
 
-	// SVM allocator
+	// Set Kernel Args (tmp)
 
-	if (useCmSVM) {
+	int kernelArgIndex = 0;
 
-		pCmAllocator = std::make_unique<CmSVMAllocator>(pCmDev);
+	int result = pCmKernel->SetKernelArg(kernelArgIndex++, sizeof(SurfaceIndex), cameraIndex);
+	result = pCmKernel->SetKernelArg(kernelArgIndex++, sizeof(SurfaceIndex), seedsIndex);
+	result = pCmKernel->SetKernelArg(kernelArgIndex++, sizeof(SurfaceIndex), colorIndex);
+	result = pCmKernel->SetKernelArg(kernelArgIndex++, sizeof(SurfaceIndex), spheresIndex);
+	result = pCmKernel->SetKernelArg(kernelArgIndex++, sizeof(SurfaceIndex), pixelIndex);
+	result = pCmKernel->SetKernelArg(kernelArgIndex++, sizeof(unsigned), &defaultSphereCount);
+	result = pCmKernel->SetKernelArg(kernelArgIndex++, sizeof(unsigned), &currentSampleCount);
 
-		// camera
-		hostCamera = static_cast<Camera*>(pCmAllocator->allocate(sizeof(float) * (kCmCamerafloatCount)));
+}
 
-		// seed 
-		hostSeeds = static_cast<unsigned*>(pCmAllocator->allocate(sizeof(unsigned) * (pixelCount * 2)));
+void CmConfigBuffer::execute() {
 
-		// color
-		hostColor = static_cast<Vec*>(pCmAllocator->allocate(sizeof(float) * kColorFloatCount * pixelCount));
+	cameraBuffer->WriteSurface(reinterpret_cast<unsigned char*>(hostCamera), nullptr);
+	seedsBuffer->WriteSurface(reinterpret_cast<unsigned char*>(hostSeeds), nullptr);
+	colorBuffer->WriteSurface(reinterpret_cast<unsigned char*>(hostColor), nullptr);
+	spheresBuffer->WriteSurface(reinterpret_cast<unsigned char*>(hostSpheres), nullptr);
 
-		// pixel
-		hostPixels = static_cast<unsigned*>(pCmAllocator->allocate(sizeof(unsigned) * pixelCount));
+	int status = pCmQueue->Enqueue(pCmTask, pCmEvent, kernelThreadspace);
 
-	} else {
-		// should change to smart pointer later.
-
-
-		// bad design, for testing only   	// Vec orig, target (3 + 3) Vec dir, x, y (3 + 3 + 3)
-		hostCamera = reinterpret_cast<Camera*>(new float[kCmCamerafloatCount]);
-		pCmDev->CreateBuffer(sizeof(float) * (kCmCamerafloatCount), cameraBuffer);
-
-
-		// TEST, use SVM
-		//hostCamera = static_cast<Camera*>(pCmAllocator->allocate(sizeof(Camera)));
-
-		// seed
-		hostSeeds = new unsigned[pixelCount * 2];
-
-
-		// test
-
-		//std::cerr << "SEED TEST\n";
-		//for (int i = 0; i < 8; ++i) {
-		//	std::cerr << hostSeeds[i] << std::endl;
-		//}
-
-		//std::cerr << "hostSeed 160: " << hostSeeds[160] << std::endl;
-
-		//std::cerr << "END SEED TEST\n";
-
-		pCmDev->CreateBuffer(sizeof(unsigned int) * pixelCount * 2, seedsBuffer);
-
-
-		// bad design, for testing only
-		// Vec 3
-
-		hostColor = reinterpret_cast<Vec*>(new float[kColorFloatCount * pixelCount]);
-		pCmDev->CreateBuffer(sizeof(float) * kColorFloatCount * pixelCount, colorBuffer);
-
-
-		// pixels
-		hostPixels = new unsigned[pixelCount];
-		pCmDev->CreateBuffer(sizeof(unsigned) * pixelCount, pixelBuffer);		// alignment ?  current setting : 4 * 800 * 600 
+	if (status != 0) {
+		std::cerr << "Error...: " << status << std::endl;
 	}
 
-	
+
+	pCmEvent->WaitForTaskFinished();
+
+	std::cout << "Cm Done!" << std::endl;
+
+	seedsBuffer->ReadSurface(reinterpret_cast<unsigned char*>(hostSeeds), pCmEvent);
+	pCmEvent->WaitForTaskFinished();
+
+	colorBuffer->ReadSurface(reinterpret_cast<unsigned char*>(hostColor), pCmEvent);
+	pCmEvent->WaitForTaskFinished();
+
+	pixelBuffer->ReadSurface(reinterpret_cast<unsigned char*>(hostPixels), pCmEvent);
+	pCmEvent->WaitForTaskFinished();
+}
+
+void CmConfigBuffer::allocateBuffer() {
+
+
+	const int pixelCount = mWidth * mHeight;
+
+	// should change to smart pointer later.
+
+
+	// bad design, for testing only   	// Vec orig, target (3 + 3) Vec dir, x, y (3 + 3 + 3)
+	hostCamera = reinterpret_cast<Camera*>(new float[kCmCamerafloatCount]);
+	pCmDev->CreateBuffer(sizeof(float) * (kCmCamerafloatCount), cameraBuffer);
+
+
+	// TEST, use SVM
+	//hostCamera = static_cast<Camera*>(pCmAllocator->allocate(sizeof(Camera)));
+
+	// seed
+	hostSeeds = new unsigned[pixelCount * 2];
+
+
+	// test
+
+	//std::cerr << "SEED TEST\n";
+	//for (int i = 0; i < 8; ++i) {
+	//	std::cerr << hostSeeds[i] << std::endl;
+	//}
+
+	//std::cerr << "hostSeed 160: " << hostSeeds[160] << std::endl;
+
+	//std::cerr << "END SEED TEST\n";
+
+	pCmDev->CreateBuffer(sizeof(unsigned int) * pixelCount * 2, seedsBuffer);
+
+
+	// bad design, for testing only
+	// Vec 3
+
+	hostColor = reinterpret_cast<Vec*>(new float[kColorFloatCount * pixelCount]);
+	pCmDev->CreateBuffer(sizeof(float) * kColorFloatCount * pixelCount, colorBuffer);
+
+
+	// pixels
+	hostPixels = new unsigned[pixelCount];
+	pCmDev->CreateBuffer(sizeof(unsigned) * pixelCount, pixelBuffer);		// alignment ?  current setting : 4 * 800 * 600 
+
+
 	//  ---- init part ---- 
 
 	// seeds
@@ -248,155 +348,67 @@ void AllocateCmBuffers() {
 			hostSeeds[i] = 2;
 	}
 
-
 	// color
 	float* tmpColor = (float*)hostColor;
 	for (unsigned i = 0; i < kColorFloatCount * pixelCount; ++i) {
 		tmpColor[i] = 0;
 	}
 
-
 	// pixel
 	for (int i = 0; i < pixelCount; ++i) {
 		hostPixels[i] = 0;
 	}
 
-}
-
-void SetupCM() {
-
-	int result = 0;
-
-	pCmDev = nullptr;
-	UINT version = 0;
-
-	result = CreateCmDevice(pCmDev, version);
-	if (result != CM_SUCCESS) {
-		printf("CmDevice creation error");
-		exit(EXIT_FAILURE);
-	}
-
-	if (version < CM_1_0) {
-		printf(" The runtime API version is later than runtime DLL version");
-		exit(EXIT_FAILURE);
-	}
-
-	FILE* pISA = fopen(isaFileName.c_str(), "rb");
-	if (pISA == NULL) {
-		perror("isa file");
-		exit(EXIT_FAILURE);
-	}
-
-	std::vector<char> pCommonISABuffer = ReadKernelSourcesFile(isaFileName);
-
-	CmProgram* cmProgram = nullptr;
-	result = pCmDev->LoadProgram(reinterpret_cast<void*>(pCommonISABuffer.data()), pCommonISABuffer.size(), cmProgram);		// check the size if error !
-	if (result != CM_SUCCESS) {
-		perror("CM LoadProgram error");
-		exit(EXIT_FAILURE);
-	}
-
-
-	// Create Kernel
-	// CmKernel* cmKernel = nullptr;
-	result = pCmDev->CreateKernel(cmProgram, CM_KERNEL_FUNCTION(RayTracing), cmKernel);
-	if (result != CM_SUCCESS) {
-		perror("LoadProgram error");
-		exit(EXIT_FAILURE);
-	}
-
-
-	// Allocate Cm Buffers
-	AllocateCmBuffers();
-
-	// test !
-	SetupCmDefaultScene();
-
-	if (useCmSVM) {
-
-		int kernelArgIndex = 0;
-
-		std::cerr << "sizeof ptr:" << sizeof(void*) << std::endl;
-
-		result = cmKernel->SetKernelArg(kernelArgIndex++, sizeof(void*), &hostCamera);
-		result = cmKernel->SetKernelArg(kernelArgIndex++, sizeof(void*), &hostSeeds);
-		result = cmKernel->SetKernelArg(kernelArgIndex++, sizeof(void*), &hostColor);
-		result = cmKernel->SetKernelArg(kernelArgIndex++, sizeof(void*), &hostSpheres);
-		result = cmKernel->SetKernelArg(kernelArgIndex++, sizeof(void*), &hostPixels);
-		result = cmKernel->SetKernelArg(kernelArgIndex++, sizeof(unsigned), &defaultSphereCount);
-
-	} else {
-
-		// get index 
-		// 
-		SurfaceIndex* cameraIndex;
-		SurfaceIndex* seedsIndex;
-		SurfaceIndex* colorIndex;
-		SurfaceIndex* spheresIndex;
-		SurfaceIndex* pixelIndex;
-
-		cameraBuffer->GetIndex(cameraIndex);
-		seedsBuffer->GetIndex(seedsIndex);
-		colorBuffer->GetIndex(colorIndex);
-		spheresBuffer->GetIndex(spheresIndex);
-		pixelBuffer->GetIndex(pixelIndex);
-
-
-		// Set Kernel Args (tmp)
-
-		int kernelArgIndex = 0;
-
-		result = cmKernel->SetKernelArg(kernelArgIndex++, sizeof(SurfaceIndex), cameraIndex);
-		result = cmKernel->SetKernelArg(kernelArgIndex++, sizeof(SurfaceIndex), seedsIndex);
-		result = cmKernel->SetKernelArg(kernelArgIndex++, sizeof(SurfaceIndex), colorIndex);
-		result = cmKernel->SetKernelArg(kernelArgIndex++, sizeof(SurfaceIndex), spheresIndex);
-		result = cmKernel->SetKernelArg(kernelArgIndex++, sizeof(SurfaceIndex), pixelIndex);
-		result = cmKernel->SetKernelArg(kernelArgIndex++, sizeof(unsigned), &defaultSphereCount);
-	}
-
-	//	cmKernel->SetKernelArg(2, sizeof(SurfaceIndex), pixelIndex);
-
-
-	if (result != CM_SUCCESS) {
-		std::cerr << "Set Kernel Arg Error ... " << result << std::endl;
-	}
-
-
-	// Create event ??
-
-	// create thread count, thread space 
-
-	// check the value !
-	pCmDev->CreateThreadSpace(kThreadWidth, kThreadHeight, kernelThreadspace);
-	cmKernel->SetThreadCount(kThreadWidth * kThreadHeight);
-
-
-	// create Task
-	pCmDev->CreateTask(pCmTask);
-	pCmTask->AddKernel(cmKernel);
-
-	// create Queue
-	pCmDev->CreateQueue(pCmQueue);
 
 
 }
 
-void ExecuteCmKernel() {
+void CmConfigBuffer::freeBuffer() {
+	// yet to be done 
+}
 
-	//std::cerr << "before Host seed " << 0 << " x value:" << hostSeeds[0] << std::endl;
-	//std::cerr << "before Host seed " << 1 << " x value:" << hostSeeds[1] << std::endl;
 
-	if (!useCmSVM) {
 
-		cameraBuffer->WriteSurface(reinterpret_cast<unsigned char*>(hostCamera), nullptr);
-		seedsBuffer->WriteSurface(reinterpret_cast<unsigned char*>(hostSeeds), nullptr);
-		colorBuffer->WriteSurface(reinterpret_cast<unsigned char*>(hostColor), nullptr);
-		spheresBuffer->WriteSurface(reinterpret_cast<unsigned char*>(hostSpheres), nullptr);
-		//pixelBuffer->WriteSurface(reinterpret_cast<unsigned char*>(hostPixels), nullptr);
-	}
+// -----------------------------
 
-	// test printf
-	//pCmDev->InitPrintBuffer();
+
+CmConfigSVM::CmConfigSVM(int width, int height) : CmConfig(width, height) {
+}
+
+void CmConfigSVM::sceneSetup(const std::vector<Sphere>& spheres, Vec orig, Vec dir) {
+	defaultSpheres = spheres.data();
+	defaultSphereCount = spheres.size();
+
+
+	hostSpheres = static_cast<Sphere*>(pCmAllocator->allocate(sizeof(float) * kSphereFloatCount * defaultSphereCount));
+
+
+	setSceneArguemnts();
+
+}
+
+CmConfigSVM::~CmConfigSVM() {
+	// yet to be done
+}
+
+void CmConfigSVM::setArguments() {
+
+
+	int kernelArgIndex = 0;
+
+	std::cerr << "sizeof ptr:" << sizeof(void*) << std::endl;
+
+	int result = pCmKernel->SetKernelArg(kernelArgIndex++, sizeof(void*), &hostCamera);
+	result = pCmKernel->SetKernelArg(kernelArgIndex++, sizeof(void*), &hostSeeds);
+	result = pCmKernel->SetKernelArg(kernelArgIndex++, sizeof(void*), &hostColor);
+	result = pCmKernel->SetKernelArg(kernelArgIndex++, sizeof(void*), &hostSpheres);
+	result = pCmKernel->SetKernelArg(kernelArgIndex++, sizeof(void*), &hostPixels);
+	result = pCmKernel->SetKernelArg(kernelArgIndex++, sizeof(unsigned), &defaultSphereCount);
+	result = pCmKernel->SetKernelArg(kernelArgIndex++, sizeof(unsigned), &currentSampleCount);
+
+}
+
+void CmConfigSVM::execute() {
 
 	int status = pCmQueue->Enqueue(pCmTask, pCmEvent, kernelThreadspace);
 
@@ -404,83 +416,58 @@ void ExecuteCmKernel() {
 		std::cerr << "Error...: " << status << std::endl;
 	}
 
-
 	pCmEvent->WaitForTaskFinished();
-
 	std::cout << "Cm Done!" << std::endl;
-	//std::cerr << std::endl;
+}
 
-	//pCmDev->FlushPrintBuffer();
-	//std::cout << std::endl;
+void CmConfigSVM::allocateBuffer() {
 
 
-	if (!useCmSVM) {
+	const int pixelCount = mWidth * mHeight;
 
-		seedsBuffer->ReadSurface(reinterpret_cast<unsigned char*>(hostSeeds), pCmEvent);
 
-		pCmEvent->WaitForTaskFinished();
+	pCmAllocator = std::make_unique<CmSVMAllocator>(pCmDev);
 
-		colorBuffer->ReadSurface(reinterpret_cast<unsigned char*>(hostColor), pCmEvent);
+	// camera
+	hostCamera = static_cast<Camera*>(pCmAllocator->allocate(sizeof(float) * (kCmCamerafloatCount)));
 
-		pCmEvent->WaitForTaskFinished();
+	// seed 
+	hostSeeds = static_cast<unsigned*>(pCmAllocator->allocate(sizeof(unsigned) * (pixelCount * 2)));
 
-		pixelBuffer->ReadSurface(reinterpret_cast<unsigned char*>(hostPixels), pCmEvent);
+	// color
+	hostColor = static_cast<Vec*>(pCmAllocator->allocate(sizeof(float) * kColorFloatCount * pixelCount));
 
-		pCmEvent->WaitForTaskFinished();
+	// pixel
+	hostPixels = static_cast<unsigned*>(pCmAllocator->allocate(sizeof(unsigned) * pixelCount));
+
+
+	//  ---- init part ---- 
+
+	// seeds
+	for (int i = 0; i < pixelCount * 2; ++i) {
+		//hostSeeds[i] = std::rand();
+
+		// TEST!
+		hostSeeds[i] = std::rand();
+
+		if (hostSeeds[i] < 2)
+			hostSeeds[i] = 2;
 	}
 
-	// tmp color test
-	//float* tmpColorPtr = reinterpret_cast<float*>(hostColor);
-	////std::cerr << "Color 0 1 2 pading: " << tmpColorPtr[0] << " " << tmpColorPtr[1] << " " << tmpColorPtr[2] << " " << tmpColorPtr[3] << " " << std::endl;
+	// color
+	float* tmpColor = (float*)hostColor;
+	for (unsigned i = 0; i < kColorFloatCount * pixelCount; ++i) {
+		tmpColor[i] = 0;
+	}
 
-
-	//// convert to pixel here ...
-
-	//// design trade-off : use Cm to convert and read/write the pixel value or do it locally (with CPU) ?
-
-
-
-	//const int pixelCount = width * height;
-	//for (auto i = 0; i < pixelCount; ++i) {
-	//	hostPixels[i] = (toInt(tmpColorPtr[4 * i])) | (toInt(tmpColorPtr[4 * i + 1]) << 8) | (toInt(tmpColorPtr[4 * i + 2]) << 16);
-
-	//	//if (hostPixels[i] > 0) {
-	//	//	std::cerr << i <<" PIXEL: " << hostPixels[i] << " " << (toInt(tmpColorPtr[4 * i])) << " " << (toInt(tmpColorPtr[4 * i + 1])) << " " << (toInt(tmpColorPtr[4 * i + 2])) << std::endl;
-	//	//}
-	//}
-
-
-
-
-	// test
-
-	//	std::cerr << "Tmp Test Seed" << std::endl;
-	//for (auto i = 0; i < width * height; ++i) {
-	//	std::cerr << "Host seed " << i << " x value:" <<hostSeeds[i] << std::endl;
-	//}
-
-	//	std::cerr << "Host seed " << 0 << " x value:" << hostSeeds[0] << std::endl;
-	//	std::cerr << "Host seed " << 1 << " x value:" << hostSeeds[1] << std::endl;
+	// pixel
+	for (int i = 0; i < pixelCount; ++i) {
+		hostPixels[i] = 0;
+	}
 
 
 }
 
-void UpdateRenderingCm() {
-	double startTime = WallClockTime();
-	int startSampleCount = currentSampleCount;
-
-
-	// tmp
-	cmKernel->SetKernelArg(6, sizeof(unsigned), &currentSampleCount);
-
-	ExecuteCmKernel();
-	++currentSampleCount;
-
-
-	const double elapsedTime = WallClockTime() - startTime;
-	const int samples = currentSampleCount - startSampleCount;
-	const double sampleSec = samples * height * width / elapsedTime;
-	sprintf(captionBuffer, "Rendering time %.3f sec (pass %d)  Sample/sec  %.1fK\n",
-		elapsedTime, currentSampleCount, sampleSec / 1000.f);
+void CmConfigSVM::freeBuffer() {
+	// yet to be done
 }
-
