@@ -352,7 +352,6 @@ void CmConfigBuffer::allocateBuffer() {
 	}
 
 
-
 }
 
 void CmConfigBuffer::freeBuffer() {
@@ -365,6 +364,7 @@ void CmConfigBuffer::freeBuffer() {
 
 
 CmConfigSVM::CmConfigSVM(int width, int height) : CmConfig(width, height) {
+	allocateBuffer();
 }
 
 void CmConfigSVM::sceneSetup(const std::vector<Sphere>& spheres, Vec orig, Vec dir) {
