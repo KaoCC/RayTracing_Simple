@@ -1,8 +1,8 @@
 #include "Scene.hpp"
 
+#include <vector>
 
-
-Sphere DemoSpheres[] = {
+std::vector<Sphere> DemoSpheres {
 	{ 1000,{ 0, -1000, 0 },{ 0, 0, 0 },{ 0.75f, 0.75f, 0.75f }, Refl::DIFF },
 	{ 12,{ 40, 20, 0 },{ 0, 0, 0 },{ 0.9f, 0.f, 0.f }, Refl::REFR },
 	{ 11,{ -35, 20, 0 },{ 0, 0, 0 },{ 0.f, 0.9f, 0.f }, Refl::REFR },
