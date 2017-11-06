@@ -39,16 +39,8 @@ float clamp(float x, float low, float high) {
 
 
 
-
-
-
 const unsigned kThreadWidth = 100;
 const unsigned kThreadHeight = 100;
-
-
-static unsigned currentSampleCount = 0;
-
-
 
 
 
@@ -155,7 +147,7 @@ unsigned * CmConfig::getPixels() {
 	return hostPixels;
 }
 
-void CmConfig::setSceneArguemnts() {
+void CmConfig::setSceneArguments() {
 
 
 	float* tmpSphereBuf = reinterpret_cast<float*>(hostSpheres);
@@ -223,7 +215,7 @@ void CmConfigBuffer::sceneSetup(const std::vector<Sphere>& spheres, Vec orig, Ve
 	hostSpheres = reinterpret_cast<Sphere*>(new float[kSphereFloatCount * defaultSphereCount]);		// leak
 	pCmDev->CreateBuffer(sizeof(float) * kSphereFloatCount * defaultSphereCount, spheresBuffer); // Sphere buffer
 
-	setSceneArguemnts();
+	setSceneArguments();
 }
 
 CmConfigBuffer::~CmConfigBuffer() {
@@ -382,9 +374,7 @@ void CmConfigSVM::sceneSetup(const std::vector<Sphere>& spheres, Vec orig, Vec d
 
 	hostSpheres = static_cast<Sphere*>(pCmAllocator->allocate(sizeof(float) * kSphereFloatCount * defaultSphereCount));
 
-
-	setSceneArguemnts();
-
+	setSceneArguments();
 }
 
 CmConfigSVM::~CmConfigSVM() {
@@ -425,7 +415,6 @@ void CmConfigSVM::allocateBuffer() {
 
 	const int pixelCount = mWidth * mHeight;
 
-
 	pCmAllocator = std::make_unique<CmSVMAllocator>(pCmDev);
 
 	// camera
@@ -439,7 +428,6 @@ void CmConfigSVM::allocateBuffer() {
 
 	// pixel
 	hostPixels = static_cast<unsigned*>(pCmAllocator->allocate(sizeof(unsigned) * pixelCount));
-
 
 	//  ---- init part ---- 
 

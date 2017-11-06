@@ -66,8 +66,8 @@ protected:
 	unsigned defaultSphereCount = 0;
 	unsigned* hostPixels;
 
-
-	void setSceneArguemnts();
+	//tmp, check the parameters
+	void setSceneArguments();
 
 private:
 
