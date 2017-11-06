@@ -141,6 +141,44 @@ CmConfig::CmConfig(int width, int height) : Config(width, height) {
 }
 
 void CmConfig::updateCamera() {
+
+	// Create a tmp camera 
+	Camera tmpCamera;
+
+	// assign to the tmp camera from the cam buffer 
+
+	// **  convert to float pointer first 
+	float* tmpCameraBuf = reinterpret_cast<float*>(hostCamera);
+
+	unsigned tmpCamIndex = 0;
+
+	tmpCamera.orig.x = tmpCameraBuf[tmpCamIndex++];
+	tmpCamera.orig.y = tmpCameraBuf[tmpCamIndex++];
+	tmpCamera.orig.z = tmpCameraBuf[tmpCamIndex++];
+
+	tmpCamera.target.x = tmpCameraBuf[tmpCamIndex++];
+	tmpCamera.target.y = tmpCameraBuf[tmpCamIndex++];
+	tmpCamera.target.z = tmpCameraBuf[tmpCamIndex++];
+
+	computeCameraVariables(&tmpCamera, mWidth, mHeight);
+
+	// assign the value to the cam buffer  
+
+	// dir 
+	tmpCameraBuf[tmpCamIndex++] = tmpCamera.dir.x;
+	tmpCameraBuf[tmpCamIndex++] = tmpCamera.dir.y;
+	tmpCameraBuf[tmpCamIndex++] = tmpCamera.dir.z;
+
+	// x 
+	tmpCameraBuf[tmpCamIndex++] = tmpCamera.x.x;
+	tmpCameraBuf[tmpCamIndex++] = tmpCamera.x.y;
+	tmpCameraBuf[tmpCamIndex++] = tmpCamera.x.z;
+
+	// y 
+	tmpCameraBuf[tmpCamIndex++] = tmpCamera.y.x;
+	tmpCameraBuf[tmpCamIndex++] = tmpCamera.y.y;
+	tmpCameraBuf[tmpCamIndex++] = tmpCamera.y.z;
+
 }
 
 unsigned * CmConfig::getPixels() {
