@@ -249,7 +249,7 @@ void CmConfigBuffer::setArguments() {
 	result = pCmKernel->SetKernelArg(kernelArgIndex++, sizeof(SurfaceIndex), spheresIndex);
 	result = pCmKernel->SetKernelArg(kernelArgIndex++, sizeof(SurfaceIndex), pixelIndex);
 	result = pCmKernel->SetKernelArg(kernelArgIndex++, sizeof(unsigned), &defaultSphereCount);
-	result = pCmKernel->SetKernelArg(kernelArgIndex++, sizeof(unsigned), &currentSampleCount);
+	result = pCmKernel->SetKernelArg(kernelArgIndex++, sizeof(unsigned), &mCurrentSample);
 
 }
 
@@ -394,7 +394,8 @@ void CmConfigSVM::setArguments() {
 	result = pCmKernel->SetKernelArg(kernelArgIndex++, sizeof(void*), &hostSpheres);
 	result = pCmKernel->SetKernelArg(kernelArgIndex++, sizeof(void*), &hostPixels);
 	result = pCmKernel->SetKernelArg(kernelArgIndex++, sizeof(unsigned), &defaultSphereCount);
-	result = pCmKernel->SetKernelArg(kernelArgIndex++, sizeof(unsigned), &currentSampleCount);
+	result = pCmKernel->SetKernelArg(kernelArgIndex++, sizeof(unsigned), &mCurrentSample);
+
 
 }
 
