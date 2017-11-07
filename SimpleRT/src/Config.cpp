@@ -15,7 +15,7 @@ std::unique_ptr<Config> createConfig(int width, int height, SupportType type) {
 		return std::make_unique<OpenCLConfigSVM>(width, height);
 	case SupportType::Cm:
 		
-		return std::make_unique<CmConfigSVM>(width, height);
+		return std::make_unique<CmConfigBuffer>(width, height);
 
 	default:
 		throw std::runtime_error("Unsupport Type");
