@@ -12,8 +12,6 @@
 
 
 
-
-
 int main(int argc, char *argv[]) {
 
 	bool useGPU = true;
@@ -41,26 +39,6 @@ int main(int argc, char *argv[]) {
 			exit(EXIT_FAILURE);
 		}
 	}();
-
-
-	//if (argc == 1) {
-	//	DefaultSceneSetup();
-	//} else if (argc == 4) {
-	//	useGPU = atoi(argv[1]);
-	//	width = atoi(argv[2]);
-	//	height = atoi(argv[3]);
-	//	DefaultSceneSetup();
-
-	//} else if (argc == 7) {
-	//	useGPU = atoi(argv[1]);
-	//	forceWorkSize = atoi(argv[2]);
-	//	kernelFileName = argv[3];
-	//	width = atoi(argv[4]);
-	//	height = atoi(argv[5]);
-	//	ReadScene(argv[6]);
-	//} else {
-	//	exit(EXIT_FAILURE);
-	//}
 
 
 	
