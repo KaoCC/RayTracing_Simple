@@ -32,8 +32,8 @@ int main(int argc, char *argv[]) {
 			return createConfig(glWidth, glHeight, SupportType::Cm, useGPU, useSVM);
 		} else if (argc >= 4) {
 
-			useGPU = (std::atoi(argv[2]) == 2) ? true : false;
-			useSVM = (std::atoi(argv[3]) == 3) ? true : false;
+			useGPU = (std::atoi(argv[2]) == 1) ? true : false;
+			useSVM = (std::atoi(argv[3]) == 1) ? true : false;
 
 			return createConfig(glWidth, glHeight, selectType(std::atoi(argv[1])), useGPU, useSVM);
 
