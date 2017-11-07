@@ -43,11 +43,15 @@ private:
 // Support Type
 
 enum class SupportType {
-	OpenCL
+	OpenCL,
+	Cm,
+	Default
 };
 
-std::unique_ptr<Config> createConfig(int width, int height, SupportType type);
+std::unique_ptr<Config> createConfig(int width, int height, SupportType type, bool useGPU, bool useSVM);
 
+
+SupportType selectType(int id);
 
 
 #endif
