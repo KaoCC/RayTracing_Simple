@@ -188,6 +188,13 @@ unsigned * CmConfig::getPixels() {
 	return hostPixels;
 }
 
+CmConfig::~CmConfig() {
+	pCmDev->DestroyThreadSpace(kernelThreadspace);
+	pCmDev->DestroyTask(pCmTask);
+	pCmDev->DestroyKernel(pCmKernel);
+	DestroyCmDevice(pCmDev);
+}
+
 void CmConfig::setSceneArguments() {
 
 

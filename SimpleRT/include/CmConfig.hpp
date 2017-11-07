@@ -35,7 +35,7 @@ public:
 	virtual void updateCamera() override;
 	virtual unsigned * getPixels() override;
 
-	virtual ~CmConfig() = default;
+	virtual ~CmConfig();
 
 protected:
 
