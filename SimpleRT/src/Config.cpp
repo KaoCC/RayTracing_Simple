@@ -10,12 +10,19 @@ std::unique_ptr<Config> createConfig(int width, int height, SupportType type, bo
 
 	switch (type) {
 	case SupportType::OpenCL:
-		break;
 
 		if (useSVM) {
 			return std::make_unique<OpenCLConfigSVM>(width, height);
 		} else {
 			return std::make_unique<OpenCLConfigBuffer>(width, height);
+		}
+
+	case SupportType::Cm:
+
+		if (useSVM) {
+			return std::make_unique<CmConfigSVM>(width, height);
+		} else {
+			return std::make_unique<CmConfigBuffer>(width, height);
 		}
 
 	default:
