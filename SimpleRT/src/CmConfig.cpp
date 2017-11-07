@@ -195,7 +195,7 @@ CmConfig::~CmConfig() {
 	DestroyCmDevice(pCmDev);
 }
 
-void CmConfig::setSceneArguments() {
+void CmConfig::setSceneArguments(const Vec& orig, const Vec& target) {
 
 
 	float* tmpSphereBuf = reinterpret_cast<float*>(hostSpheres);
@@ -238,14 +238,14 @@ void CmConfig::setSceneArguments() {
 	unsigned tmpCameraIndex = 0;
 
 	// orig
-	tmpCameraBuf[tmpCameraIndex++] = 20.f;
-	tmpCameraBuf[tmpCameraIndex++] = 100.f;
-	tmpCameraBuf[tmpCameraIndex++] = 120.f;
+	tmpCameraBuf[tmpCameraIndex++] = orig.x;
+	tmpCameraBuf[tmpCameraIndex++] = orig.y;
+	tmpCameraBuf[tmpCameraIndex++] = orig.z;
 
 	// target
-	tmpCameraBuf[tmpCameraIndex++] = 0.f;
-	tmpCameraBuf[tmpCameraIndex++] = 25.f;
-	tmpCameraBuf[tmpCameraIndex++] = 0.f;
+	tmpCameraBuf[tmpCameraIndex++] = target.x;
+	tmpCameraBuf[tmpCameraIndex++] = target.y;
+	tmpCameraBuf[tmpCameraIndex++] = target.z;
 
 }
 
@@ -255,7 +255,7 @@ CmConfigBuffer::CmConfigBuffer(int width, int height) : CmConfig(width, height, 
 	allocateBuffer();
 }
 
-void CmConfigBuffer::sceneSetup(const std::vector<Sphere>& spheres, Vec orig, Vec dir) {
+void CmConfigBuffer::sceneSetup(const std::vector<Sphere>& spheres, Vec orig, Vec target) {
 
 	defaultSpheres = spheres.data();
 	defaultSphereCount = spheres.size();
@@ -263,7 +263,7 @@ void CmConfigBuffer::sceneSetup(const std::vector<Sphere>& spheres, Vec orig, Ve
 	hostSpheres = reinterpret_cast<Sphere*>(new float[kSphereFloatCount * defaultSphereCount]);		// leak
 	pCmDev->CreateBuffer(sizeof(float) * kSphereFloatCount * defaultSphereCount, spheresBuffer); // Sphere buffer
 
-	setSceneArguments();
+	setSceneArguments(orig, target);
 }
 
 CmConfigBuffer::~CmConfigBuffer() {
@@ -316,8 +316,7 @@ void CmConfigBuffer::execute() {
 
 
 	pCmEvent->WaitForTaskFinished();
-
-	std::cout << "Cm Done!" << std::endl;
+	//std::cout << "Cm Done!" << std::endl;
 
 	seedsBuffer->ReadSurface(reinterpret_cast<unsigned char*>(hostSeeds), pCmEvent);
 	pCmEvent->WaitForTaskFinished();
@@ -415,14 +414,14 @@ CmConfigSVM::CmConfigSVM(int width, int height) : CmConfig(width, height, true) 
 	allocateBuffer();
 }
 
-void CmConfigSVM::sceneSetup(const std::vector<Sphere>& spheres, Vec orig, Vec dir) {
+void CmConfigSVM::sceneSetup(const std::vector<Sphere>& spheres, Vec orig, Vec target) {
 	defaultSpheres = spheres.data();
 	defaultSphereCount = spheres.size();
 
 
 	hostSpheres = static_cast<Sphere*>(pCmAllocator->allocate(sizeof(float) * kSphereFloatCount * defaultSphereCount));
 
-	setSceneArguments();
+	setSceneArguments(orig, target);
 }
 
 CmConfigSVM::~CmConfigSVM() {
@@ -434,7 +433,7 @@ void CmConfigSVM::setArguments() {
 
 	int kernelArgIndex = 0;
 
-	std::cerr << "sizeof ptr:" << sizeof(void*) << std::endl;
+	//std::cerr << "sizeof ptr:" << sizeof(void*) << std::endl;
 
 	int result = pCmKernel->SetKernelArg(kernelArgIndex++, sizeof(void*), &hostCamera);
 	result = pCmKernel->SetKernelArg(kernelArgIndex++, sizeof(void*), &hostSeeds);
@@ -456,7 +455,7 @@ void CmConfigSVM::execute() {
 	}
 
 	pCmEvent->WaitForTaskFinished();
-	std::cout << "Cm Done!" << std::endl;
+	//std::cout << "Cm Done!" << std::endl;
 }
 
 void CmConfigSVM::allocateBuffer() {

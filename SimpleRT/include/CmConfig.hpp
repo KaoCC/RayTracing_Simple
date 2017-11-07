@@ -67,7 +67,7 @@ protected:
 	unsigned* hostPixels;
 
 	//tmp, check the parameters
-	void setSceneArguments();
+	void setSceneArguments(const Vec& orig, const Vec& target);
 
 private:
 
