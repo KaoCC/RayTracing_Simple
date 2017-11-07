@@ -16,36 +16,53 @@
 
 int main(int argc, char *argv[]) {
 
+	bool useGPU = true;
+	bool useSVM = false;
+
+
 	fprintf(stderr, "Usage: %s\n", argv[0]);
-	fprintf(stderr, "Usage: %s <use CPU/GPU (0/1)> <workgroup size (power of 2, 0=default)> <kernel> <width> <height> <scene>\n", argv[0]);
-	fprintf(stderr, "Usage: %s <use CPU/GPU (0/1)> <width> <height>\n", argv[0]);
+	fprintf(stderr, "Usage: %s <framework ID> <use CPU/GPU (0/1)> <use SVM (0/1)> <scene> <workgroup size (power of 2, 0=default)> <kernel> <width> <height>\n", argv[0]);
+	fprintf(stderr, "Usage: %s <framework ID> <use CPU/GPU (0/1)> <use SVM (0/1)> <scene>\n", argv[0]);
 
 
-	std::unique_ptr<Config> frameworkConfig = createConfig(glWidth, glHeight, SupportType::OpenCL);
+	std::unique_ptr<Config> frameworkConfig = [&]() {
+		if (argc == 1) {
+			// the default one ... however it is for tmp use only..
+			return createConfig(glWidth, glHeight, SupportType::Cm, useGPU, useSVM);
+		} else if (argc >= 4) {
+
+			useGPU = (std::atoi(argv[2]) == 2) ? true : false;
+			useSVM = (std::atoi(argv[3]) == 3) ? true : false;
+
+			return createConfig(glWidth, glHeight, selectType(std::atoi(argv[1])), useGPU, useSVM);
 
 
-	//if (argc == 1) {
-	//	DefaultSceneSetup();
-	//} else if (argc == 4) {
-	//	useGPU = atoi(argv[1]);
-	//	width = atoi(argv[2]);
-	//	height = atoi(argv[3]);
-	//	DefaultSceneSetup();
-
-	//} else if (argc == 7) {
-	//	useGPU = atoi(argv[1]);
-	//	forceWorkSize = atoi(argv[2]);
-	//	kernelFileName = argv[3];
-	//	width = atoi(argv[4]);
-	//	height = atoi(argv[5]);
-	//	ReadScene(argv[6]);
-	//} else {
-	//	exit(EXIT_FAILURE);
-	//}
+		} else {
+			exit(EXIT_FAILURE);
+		}
+	}();
 
 
+	
+	Vec orig;
+	Vec target;
+	std::vector<Sphere> spheres; 
 
-	frameworkConfig->sceneSetup(DemoSpheres, { 20.f, 100.f, 120.f }, { 0.f, 25.f, 0.f });		// test
+	// be careful, the current design requires the spheres to exist until termination. !!!
+	// This may changed later.
+
+	if (argc >= 5) {
+
+		spheres = readScene(argv[4], orig, target);
+
+	} else {
+		// the default scene
+		spheres = DemoSpheres;
+		orig = { 20.f, 100.f, 120.f };
+		target = { 0.f, 25.f, 0.f };
+	}
+
+	frameworkConfig->sceneSetup(spheres, orig, target);		// test
 	frameworkConfig->updateCamera();
 
 

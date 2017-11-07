@@ -6,16 +6,17 @@
 
 #include "Utility.hpp"
 
-std::unique_ptr<Config> createConfig(int width, int height, SupportType type) {
+std::unique_ptr<Config> createConfig(int width, int height, SupportType type, bool useGPU, bool useSVM) {
 
 	switch (type) {
 	case SupportType::OpenCL:
 		break;
 
-		return std::make_unique<OpenCLConfigSVM>(width, height);
-	case SupportType::Cm:
-		
-		return std::make_unique<CmConfigBuffer>(width, height);
+		if (useSVM) {
+			return std::make_unique<OpenCLConfigSVM>(width, height);
+		} else {
+			return std::make_unique<OpenCLConfigBuffer>(width, height);
+		}
 
 	default:
 		throw std::runtime_error("Unsupport Type");
@@ -48,5 +49,20 @@ void Config::updateRendering() {
 
 void Config::setCaptionBuffer(char * buffer) {
 	pCaptionBuff = buffer;
+}
+
+
+// tmp, simple version
+SupportType selectType(int id) {
+
+	if (id == 0) {
+		return SupportType::OpenCL;
+	} else if (id == 1) {
+		return SupportType::Cm;
+	} else {
+		return SupportType::Default;
+	}
+
+
 }
 
