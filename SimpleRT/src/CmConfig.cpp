@@ -83,7 +83,10 @@ constexpr const unsigned kColorFloatCount = 3 + 1;	// Vec(3) + 1 float padding
 
 
 
-CmConfig::CmConfig(int width, int height) : Config(width, height) {
+CmConfig::CmConfig(int width, int height, bool svmFlag) : Config(width, height) {
+
+	//useCmSVM = svmFlag;
+	isaFileName = svmFlag ? "RayTracing_Cm_SVM.isa" : "RayTracing_Cm.isa";
 
 	int result = 0;
 
@@ -241,7 +244,7 @@ void CmConfig::setSceneArguments() {
 
 
 
-CmConfigBuffer::CmConfigBuffer(int width, int height) : CmConfig(width, height) {
+CmConfigBuffer::CmConfigBuffer(int width, int height) : CmConfig(width, height, false) {
 	allocateBuffer();
 }
 
@@ -401,7 +404,7 @@ void CmConfigBuffer::freeBuffer() {
 // -----------------------------
 
 
-CmConfigSVM::CmConfigSVM(int width, int height) : CmConfig(width, height) {
+CmConfigSVM::CmConfigSVM(int width, int height) : CmConfig(width, height, true) {
 	allocateBuffer();
 }
 

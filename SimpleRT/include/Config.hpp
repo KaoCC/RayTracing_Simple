@@ -30,7 +30,6 @@ protected:
 
 private:
 
-
 	virtual void setArguments() = 0;
 	virtual void execute() = 0;
 	virtual void allocateBuffer() = 0;
@@ -43,7 +42,8 @@ private:
 // Support Type
 
 enum class SupportType {
-	OpenCL
+	OpenCL,
+	Cm
 };
 
 std::unique_ptr<Config> createConfig(int width, int height, SupportType type);

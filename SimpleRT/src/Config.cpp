@@ -2,6 +2,7 @@
 
 #include "OpenCLConfig.hpp"
 
+#include "CmConfig.hpp"
 
 #include "Utility.hpp"
 
@@ -9,8 +10,12 @@ std::unique_ptr<Config> createConfig(int width, int height, SupportType type) {
 
 	switch (type) {
 	case SupportType::OpenCL:
+		break;
 
 		return std::make_unique<OpenCLConfigSVM>(width, height);
+	case SupportType::Cm:
+		
+		return std::make_unique<CmConfigSVM>(width, height);
 
 	default:
 		throw std::runtime_error("Unsupport Type");

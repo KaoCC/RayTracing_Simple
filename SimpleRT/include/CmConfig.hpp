@@ -30,7 +30,7 @@ class CmConfig : public Config {
 
 public:
 
-	CmConfig(int width, int height);
+	CmConfig(int width, int height, bool svmFlag);
 
 	virtual void updateCamera() override;
 	virtual unsigned * getPixels() override;
@@ -54,8 +54,8 @@ protected:
 
 
 	// tmp ..
-	bool useCmSVM = false;		// change this ...
-	const std::string isaFileName = useCmSVM ? "RayTracing_Cm_SVM.isa" : "RayTracing_Cm.isa";
+	//bool useCmSVM = false;		// change this ...
+	std::string isaFileName;
 
 	// host arrays
 	unsigned* hostSeeds;

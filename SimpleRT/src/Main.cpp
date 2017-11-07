@@ -12,7 +12,7 @@
 #include "Config.hpp"
 #include "CmSVMAllocator.hpp"
 
-
+#include "Scene.hpp"
 
 int main(int argc, char *argv[]) {
 
