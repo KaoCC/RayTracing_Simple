@@ -496,7 +496,7 @@ _GENX_ void radiancePathTracing(SurfaceIndex spheresIndex, const unsigned kSpher
 
 
             // KAOCC:  sample light
-            sampleLights(spheresIndex, kSphereCount, seeds, hitpoint, normal, Ld);
+            sampleLights(spheresIndex, kSphereCount, seeds, hitpoint, nl, Ld);
 
 
             Ld = throughput * Ld;
