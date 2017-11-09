@@ -1,16 +1,16 @@
 
 
-
+#includes
 
 include_directories(${RT_DIR}/include)
-
 include_directories(${GLUT_INCLUDE_DIR})
-include_directories(${OpenCL_INCLUDE_DIRS})
+
+if (USE_OPENCL)
+    include_directories(${OpenCL_INCLUDE_DIRS})
+endif()
 
 
-add_executable(
-    SimpleRT
-
+set(BASE_SRC 
     ./include/Camera.hpp
     ./include/Ray.hpp
     ./include/Scene.hpp
@@ -18,7 +18,7 @@ add_executable(
     ./include/Sphere.hpp
     ./include/Utility.hpp
     ./include/Vec.hpp
-    ./include/OpenCLConfig.hpp
+
     ./include/Config.hpp
 
     ./src/Main.cpp
@@ -27,11 +27,28 @@ add_executable(
     ./src/Vec.cpp
     ./src/Scene.cpp
     ./src/Config.cpp
-    ./src/OpenCLConfig.cpp
+
+)
+
+if (USE_OPENCL)
+    list(APPEND BASE_SRC ./include/OpenCLConfig.hpp ./src/OpenCLConfig.cpp)
+endif()
+
+
+
+
+add_executable(
+    SimpleRT
+
+    ${BASE_SRC}
 )
 
 
-target_link_libraries(SimpleRT ${GLUT_LIBRARIES} ${GLUT_glut_LIBRARY} ${OpenCL_LIBRARIES})
+target_link_libraries(SimpleRT ${GLUT_LIBRARIES} ${GLUT_glut_LIBRARY} )
+
+if (USE_OPENCL)
+    target_link_libraries(SimpleRT ${OpenCL_LIBRARIES})
+endif()
 
 # load the kernel automatically
 

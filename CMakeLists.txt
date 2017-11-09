@@ -24,9 +24,24 @@ if (WIN32)
     list(APPEND CMAKE_PREFIX_PATH ${3RDPARTY_DIR}/freeglut)
 endif ()
 
+
+# options
+
+option (USE_OPENCL "Use OpenCL" ON)
+
+# add defs
+
+if (USE_OPENCL)
+    add_definitions(-DENABLE_OPENCL=1)
+endif()
+
+
 # find packages
 
-find_package(OpenCL REQUIRED)
+if (USE_OPENCL)
+    find_package(OpenCL REQUIRED)
+endif()
+
 find_package(GLUT REQUIRED)
 
 add_subdirectory(SimpleRT)
