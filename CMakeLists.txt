@@ -15,26 +15,34 @@ set(3RDPARTY_DIR ${CMAKE_SOURCE_DIR}/3rdparty)
 set(RT_DIR ${CMAKE_SOURCE_DIR}/SimpleRT)
 
 
-# for Cm Runtime and Compiler
-set(CM_DIR C:/Intel/MDF)
-#set(CM_ENV_SCRIPT C:/Intel/MDF/setupenv.bat)
+# Cm option
 
-set(CM_RUNTIME_DIR ${CM_DIR}/runtime)
-set(CM_COMPILER_DIR ${CM_DIR}/compiler)
+option (USE_Cm "Use Cm" ON)
 
-set(CM_RUNTIME_INC ${CM_RUNTIME_DIR}/include)
-set(CM_COMPILER_INC ${CM_COMPILER_DIR}/include)
+if (USE_Cm)
 
-# add default settings and configurations for Cm compilers and env
+    # for Cm Runtime and Compiler
+    set(CM_DIR C:/Intel/MDF)
+    #set(CM_ENV_SCRIPT C:/Intel/MDF/setupenv.bat)
 
-set(EXTRA_INC -I ${CM_COMPILER_INC} -I ${CM_RUNTIME_INC})
-set(INSTALLDIR ${CM_DIR})
-set(ICLDIR ${INSTALLDIR}/compiler)
-set(GENX_CC ${ICLDIR}/bin/cmc)
+    set(CM_RUNTIME_DIR ${CM_DIR}/runtime)
+    set(CM_COMPILER_DIR ${CM_DIR}/compiler)
 
-set(GENX_PATH -mCM_genx_assembler=${ICLDIR}/bin/GenX_IR)
+    set(CM_RUNTIME_INC ${CM_RUNTIME_DIR}/include)
+    set(CM_COMPILER_INC ${CM_COMPILER_DIR}/include)
 
+    # add default settings and configurations for Cm compilers and env
 
+    set(EXTRA_INC -I ${CM_COMPILER_INC} -I ${CM_RUNTIME_INC})
+    set(INSTALLDIR ${CM_DIR})
+    set(ICLDIR ${INSTALLDIR}/compiler)
+    set(GENX_CC ${ICLDIR}/bin/cmc)
+
+    set(GENX_PATH -mCM_genx_assembler=${ICLDIR}/bin/GenX_IR)
+
+    message("GENX_CC is ${GENX_CC}")
+
+endif()
 
 # add ARCH check
 if(NOT "${CMAKE_GENERATOR}" MATCHES "(Win64|IA64)")
@@ -50,7 +58,8 @@ else()
 endif()
 
 
-message("GENX_CC is ${GENX_CC}")
+
+
 
 
 project(SimpleRT)
@@ -64,9 +73,29 @@ if (WIN32)
     list(APPEND CMAKE_PREFIX_PATH ${3RDPARTY_DIR}/freeglut)
 endif ()
 
+
+# options
+
+option (USE_OPENCL "Use OpenCL" ON)
+
+# add defs
+
+if (USE_OPENCL)
+    add_definitions(-DENABLE_OPENCL=1)
+endif()
+
+
+if (USE_Cm)
+    add_definitions(-DENABLE_Cm=1)
+endif()
+
+
 # find packages
 
-find_package(OpenCL REQUIRED)
+if (USE_OPENCL)
+    find_package(OpenCL REQUIRED)
+endif()
+
 find_package(GLUT REQUIRED)
 
 add_subdirectory(SimpleRT)

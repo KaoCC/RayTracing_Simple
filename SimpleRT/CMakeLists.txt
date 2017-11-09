@@ -1,21 +1,24 @@
 
 
-
+#includes
 
 include_directories(${RT_DIR}/include)
-
 include_directories(${GLUT_INCLUDE_DIR})
-include_directories(${OpenCL_INCLUDE_DIRS})
 
-# Cm related
-include_directories(${CM_RUNTIME_INC})
-include_directories(${CM_COMPILER_INC})
+if (USE_OPENCL)
+    include_directories(${OpenCL_INCLUDE_DIRS})
+endif()
 
-link_directories(${CM_RUNTIME_DIR}/lib/${PATH_MODIFIER} ${CM_COMPILER_DIR}/lib/${PATH_MODIFIER})
 
-add_executable(
-    SimpleRT
+if (USE_Cm)
+    # Cm related 
+    include_directories(${CM_RUNTIME_INC}) 
+    include_directories(${CM_COMPILER_INC})
+    link_directories(${CM_RUNTIME_DIR}/lib/${PATH_MODIFIER} ${CM_COMPILER_DIR}/lib/${PATH_MODIFIER})
+endif()
 
+
+set(BASE_SRC 
     ./include/Camera.hpp
     ./include/Ray.hpp
     ./include/Scene.hpp
@@ -23,32 +26,50 @@ add_executable(
     ./include/Sphere.hpp
     ./include/Utility.hpp
     ./include/Vec.hpp
-    ./include/CmSVMAllocator.hpp
-    ./include/CmConfig.hpp
-    ./include/OpenCLConfig.hpp
+
     ./include/Config.hpp
 
     ./src/Main.cpp
     ./src/SetupGL.cpp
     ./src/Utility.cpp
     ./src/Vec.cpp
-    ./src/CmSVMAllocator.cpp
-    ./src/CmConfig.cpp
     ./src/Scene.cpp
     ./src/Config.cpp
-    ./src/OpenCLConfig.cpp
+
+)
+
+if (USE_OPENCL)
+    list(APPEND BASE_SRC ./include/OpenCLConfig.hpp ./src/OpenCLConfig.cpp)
+endif()
+
+if (USE_Cm)
+    list(APPEND BASE_SRC ./include/CmSVMAllocator.hpp ./include/CmConfig.hpp ./src/CmConfig.cpp ./src/CmSVMAllocator.cpp  )
+endif()
+
+
+add_executable(
+    SimpleRT
+
+    ${BASE_SRC}
 )
 
 
+target_link_libraries(SimpleRT ${GLUT_LIBRARIES} ${GLUT_glut_LIBRARY} )
+
+if (USE_OPENCL)
+    target_link_libraries(SimpleRT ${OpenCL_LIBRARIES})
+endif()
+
+if (USE_Cm)
 
 
-target_link_libraries(SimpleRT ${GLUT_LIBRARIES} ${GLUT_glut_LIBRARY} ${OpenCL_LIBRARIES})
+    message(${CM_RUNTIME_DIR}/lib/${PATH_MODIFIER})
 
-
-# Cm 
-set(CMRT_LIB "igfx${DX_MOD}cmrt${FILENAME_MODIFIER}")
-list (APPEND CMRT_LIB "libcm" )
-target_link_libraries(SimpleRT ${CMRT_LIB})
+    # Cm  
+    set(CMRT_LIB "igfx${DX_MOD}cmrt${FILENAME_MODIFIER}") 
+    list (APPEND CMRT_LIB "libcm" ) 
+    target_link_libraries(SimpleRT ${CMRT_LIB}) 
+endif()
 
 # load the kernel automatically
 

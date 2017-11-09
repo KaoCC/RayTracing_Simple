@@ -1,14 +1,19 @@
 #include "Config.hpp"
 
+#ifdef ENABLE_OPENCL
 #include "OpenCLConfig.hpp"
+#endif
 
+#ifdef ENABLE_Cm
 #include "CmConfig.hpp"
+#endif
 
 #include "Utility.hpp"
 
 std::unique_ptr<Config> createConfig(int width, int height, SupportType type, bool useGPU, bool useSVM) {
 
 	switch (type) {
+#ifdef ENABLE_OPENCL
 	case SupportType::OpenCL:
 
 		if (useSVM) {
@@ -16,7 +21,9 @@ std::unique_ptr<Config> createConfig(int width, int height, SupportType type, bo
 		} else {
 			return std::make_unique<OpenCLConfigBuffer>(width, height);
 		}
+#endif
 
+#ifdef ENABLE_Cm
 	case SupportType::Cm:
 
 		if (useSVM) {
@@ -24,6 +31,7 @@ std::unique_ptr<Config> createConfig(int width, int height, SupportType type, bo
 		} else {
 			return std::make_unique<CmConfigBuffer>(width, height);
 		}
+#endif
 
 	default:
 		throw std::runtime_error("Unsupport Type");

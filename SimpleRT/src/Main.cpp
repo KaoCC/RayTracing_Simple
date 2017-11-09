@@ -7,10 +7,10 @@
 #include "Camera.hpp"
 
 #include "SetupGL.hpp"
-#include "OpenCLConfig.hpp"
+
 
 #include "Config.hpp"
-#include "CmSVMAllocator.hpp"
+//#include "CmSVMAllocator.hpp"
 
 #include "Scene.hpp"
 #include "Utility.hpp"
@@ -29,7 +29,7 @@ int main(int argc, char *argv[]) {
 	std::unique_ptr<Config> frameworkConfig = [&]() {
 		if (argc == 1) {
 			// the default one ... however it is for tmp use only..
-			return createConfig(glWidth, glHeight, SupportType::Cm, useGPU, useSVM);
+			return createConfig(glWidth, glHeight, selectType(0), useGPU, useSVM);
 		} else if (argc >= 4) {
 
 			useGPU = (std::atoi(argv[2]) == 1) ? true : false;
