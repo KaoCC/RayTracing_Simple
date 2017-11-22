@@ -45,21 +45,22 @@ int main(int argc, char *argv[]) {
 	
 	Vec orig;
 	Vec target;
-	std::vector<Sphere> spheres; 
 
 	// be careful, the current design requires the spheres to exist until termination. !!!
 	// This may changed later.
+	std::vector<Sphere> spheres = [&]() {
+		if (argc >= 5) {
 
-	if (argc >= 5) {
+			return readScene(argv[4], orig, target);
 
-		spheres = readScene(argv[4], orig, target);
+		} else {
 
-	} else {
-		// the default scene
-		spheres = DemoSpheres;
-		orig = { 20.f, 100.f, 120.f };
-		target = { 0.f, 25.f, 0.f };
-	}
+			// the default scene
+			orig = { 20.f, 100.f, 120.f };
+			target = { 0.f, 25.f, 0.f };
+			return DemoSpheres;
+		}
+	}();
 
 	frameworkConfig->sceneSetup(spheres, orig, target);		// test
 	frameworkConfig->updateCamera();
