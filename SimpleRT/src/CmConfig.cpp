@@ -318,13 +318,13 @@ void CmConfigBuffer::execute() {
 	pCmEvent->WaitForTaskFinished();
 	//std::cout << "Cm Done!" << std::endl;
 
-	seedsBuffer->ReadSurface(reinterpret_cast<unsigned char*>(hostSeeds), pCmEvent);
+	seedsBuffer->ReadSurface(reinterpret_cast<unsigned char*>(hostSeeds), nullptr);
 	//pCmEvent->WaitForTaskFinished();
 
-	colorBuffer->ReadSurface(reinterpret_cast<unsigned char*>(hostColor), pCmEvent);
+	colorBuffer->ReadSurface(reinterpret_cast<unsigned char*>(hostColor), nullptr);
 	//pCmEvent->WaitForTaskFinished();
 
-	pixelBuffer->ReadSurface(reinterpret_cast<unsigned char*>(hostPixels), pCmEvent);
+	pixelBuffer->ReadSurface(reinterpret_cast<unsigned char*>(hostPixels), nullptr);
 	//pCmEvent->WaitForTaskFinished();
 }
 
