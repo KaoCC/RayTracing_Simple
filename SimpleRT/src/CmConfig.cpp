@@ -226,7 +226,11 @@ void CmConfig::setSceneArguments(const Vec& orig, const Vec& target) {
 		tmpSphereBuf[tmpSphereIndex++] = static_cast<float>(defaultSpheres[i].refl);
 
 		// padding
-		tmpSphereBuf[tmpSphereIndex++] = -1;
+		for (auto j = 0; j < tmpSphereIndex % kSphereFloatCount; ++j) {
+
+
+			tmpSphereBuf[tmpSphereIndex++] = -1;
+		}
 	}
 
 
