@@ -129,4 +129,37 @@ private:
 
 
 
+
+
+class CmConfigBufferUP : public CmConfig  {
+
+public:
+
+	CmConfigBufferUP(int width, int height);
+
+	virtual void sceneSetup(const std::vector<Sphere>& spheres, Vec orig, Vec dir) override;
+
+	virtual ~CmConfigBufferUP();
+
+private:
+
+
+	virtual void setArguments() override;
+	virtual void execute() override;
+	virtual void allocateBuffer() override;
+	virtual void freeBuffer() override;
+
+
+	// Cm buffers (User Provided)
+	CmBufferUP* cameraBuffer;
+	CmBufferUP* seedsBuffer;
+	CmBufferUP* colorBuffer;
+	CmBufferUP* spheresBuffer;
+	CmBufferUP* pixelBuffer;
+
+};
+
+
+
+
 #endif
