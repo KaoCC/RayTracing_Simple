@@ -511,3 +511,148 @@ void CmConfigSVM::allocateBuffer() {
 void CmConfigSVM::freeBuffer() {
 	// yet to be done
 }
+
+// ---------------------------------------
+
+
+
+
+
+
+CmConfigBufferUP::CmConfigBufferUP(int width, int height) : CmConfig(width, height, false) {
+	allocateBuffer();
+}
+
+void CmConfigBufferUP::sceneSetup(const std::vector<Sphere>& spheres, Vec orig, Vec target) {
+	// yet to be done
+
+
+
+	defaultSpheres = spheres.data();
+	defaultSphereCount = spheres.size();
+
+	//hostSpheres = static_cast<Sphere*>(new float[kSphereFloatCount * defaultSphereCount]);		// leak
+
+	hostSpheres = static_cast<Sphere*>(CM_ALIGNED_MALLOC(sizeof(float) * kSphereFloatCount * defaultSphereCount, 0x1000));		// leak
+	pCmDev->CreateBufferUP(sizeof(float) * kSphereFloatCount * defaultSphereCount, hostSpheres, spheresBuffer); // Sphere buffer
+
+	setSceneArguments(orig, target);
+
+}
+
+
+
+void CmConfigBufferUP::setArguments() {
+	// get index 
+	// 
+	SurfaceIndex* cameraIndex;
+	SurfaceIndex* seedsIndex;
+	SurfaceIndex* colorIndex;
+	SurfaceIndex* spheresIndex;
+	SurfaceIndex* pixelIndex;
+
+	cameraBuffer->GetIndex(cameraIndex);
+	seedsBuffer->GetIndex(seedsIndex);
+	colorBuffer->GetIndex(colorIndex);
+	spheresBuffer->GetIndex(spheresIndex);
+	pixelBuffer->GetIndex(pixelIndex);
+
+
+	// Set Kernel Args (tmp)
+
+	int kernelArgIndex = 0;
+
+	int result = pCmKernel->SetKernelArg(kernelArgIndex++, sizeof(SurfaceIndex), cameraIndex);
+	result = pCmKernel->SetKernelArg(kernelArgIndex++, sizeof(SurfaceIndex), seedsIndex);
+	result = pCmKernel->SetKernelArg(kernelArgIndex++, sizeof(SurfaceIndex), colorIndex);
+	result = pCmKernel->SetKernelArg(kernelArgIndex++, sizeof(SurfaceIndex), spheresIndex);
+	result = pCmKernel->SetKernelArg(kernelArgIndex++, sizeof(SurfaceIndex), pixelIndex);
+	result = pCmKernel->SetKernelArg(kernelArgIndex++, sizeof(unsigned), &defaultSphereCount);
+	result = pCmKernel->SetKernelArg(kernelArgIndex++, sizeof(unsigned), &mCurrentSample);
+}
+
+
+void CmConfigBufferUP::execute() {
+
+	int status = pCmQueue->Enqueue(pCmTask, pCmEvent, kernelThreadspace);
+
+	if (status != 0) {
+		std::cerr << "Error...: " << status << std::endl;
+	}
+
+
+	pCmEvent->WaitForTaskFinished();
+
+}
+
+
+void CmConfigBufferUP::allocateBuffer() {
+
+	const int pixelCount = mWidth * mHeight;
+
+	hostCamera = static_cast<Camera*>(CM_ALIGNED_MALLOC(sizeof(float) * kCmCamerafloatCount, 0x1000));		// 4k aligned
+	pCmDev->CreateBufferUP(sizeof(float) * (kCmCamerafloatCount), hostCamera, cameraBuffer);
+
+
+	// seed
+	//hostSeeds = new unsigned[pixelCount * 2];
+
+	hostSeeds = static_cast<unsigned*>(CM_ALIGNED_MALLOC(sizeof(unsigned) * pixelCount * 2, 0x1000));
+	pCmDev->CreateBufferUP(sizeof(unsigned) * pixelCount * 2, hostSeeds, seedsBuffer);
+
+
+	//new float[kColorFloatCount * pixelCount]
+
+	hostColor = static_cast<Vec*>(CM_ALIGNED_MALLOC(sizeof(float) * kColorFloatCount * pixelCount, 0x1000));
+	pCmDev->CreateBufferUP(sizeof(float) * kColorFloatCount * pixelCount, hostColor, colorBuffer);
+
+
+	// pixels
+	//hostPixels = new unsigned[pixelCount];
+
+	hostPixels = static_cast<unsigned*>(CM_ALIGNED_MALLOC(sizeof(unsigned) * pixelCount, 0x1000));
+	pCmDev->CreateBufferUP(sizeof(unsigned) * pixelCount, hostPixels, pixelBuffer);		// alignment ?  current setting : 4 * 800 * 600 
+
+	// ------ init part 
+
+	// todo : should be changed to a template function
+
+
+	// seeds
+	for (int i = 0; i < pixelCount * 2; ++i) {
+		//hostSeeds[i] = std::rand();
+
+		// TEST!
+		hostSeeds[i] = std::rand();
+
+		if (hostSeeds[i] < 2)
+			hostSeeds[i] = 2;
+	}
+
+	// color
+	float* tmpColor = (float*)hostColor;
+	for (unsigned i = 0; i < kColorFloatCount * pixelCount; ++i) {
+		tmpColor[i] = 0;
+	}
+
+	// pixel
+	for (int i = 0; i < pixelCount; ++i) {
+		hostPixels[i] = 0;
+	}
+
+
+
+}
+
+
+void CmConfigBufferUP::freeBuffer() {
+	// yet to be done
+}
+
+
+
+CmConfigBufferUP::~CmConfigBufferUP() {
+	// yet to be done
+}
+
+
