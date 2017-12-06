@@ -137,7 +137,7 @@ public:
 
 	CmConfigBufferUP(int width, int height);
 
-	virtual void sceneSetup(const std::vector<Sphere>& spheres, Vec orig, Vec dir) override;
+	virtual void sceneSetup(const std::vector<Sphere>& spheres, Vec orig, Vec target) override;
 
 	virtual ~CmConfigBufferUP();
 
