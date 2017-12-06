@@ -10,31 +10,59 @@
 
 #include "Utility.hpp"
 
-std::unique_ptr<Config> createConfig(int width, int height, SupportType type, bool useGPU, bool useSVM) {
+std::unique_ptr<Config> createConfig(int width, int height, SupportType frameworkType, bool useGPU, MemType memType) {
 
-	switch (type) {
+	switch (frameworkType) {
 #ifdef ENABLE_OPENCL
 	case SupportType::OpenCL:
 
-		if (useSVM) {
-			return std::make_unique<OpenCLConfigSVM>(width, height);
-		} else {
+		switch (memType) {
+		case MemType::Buffer:
 			return std::make_unique<OpenCLConfigBuffer>(width, height);
+			break;
+
+		case MemType::SVM:
+			return std::make_unique<OpenCLConfigSVM>(width, height);
+			break;
+
+		case MemType::UserProvidedZeroCopy:
+
+
+		default:
+			throw std::runtime_error("Unsupported Memory Type");
+			break;
+
 		}
 #endif
-
+		break;
 #ifdef ENABLE_Cm
 	case SupportType::Cm:
 
-		if (useSVM) {
-			return std::make_unique<CmConfigSVM>(width, height);
-		} else {
+		switch (memType) {
+
+		case MemType::Buffer:
 			return std::make_unique<CmConfigBuffer>(width, height);
+			break;
+
+		case MemType::SVM:
+			return std::make_unique<CmConfigSVM>(width, height);
+			break;
+
+
+		case MemType::UserProvidedZeroCopy:
+			return std::make_unique<CmConfigBufferUP>(width, height);
+			break;
+
+		default:
+			throw std::runtime_error("Unsupported Memory Type");
+			break;
 		}
 #endif
 
+		break;
 	default:
-		throw std::runtime_error("Unsupport Type");
+		throw std::runtime_error("Unsupported Framework Type");
+		break;
 	}
 
 }

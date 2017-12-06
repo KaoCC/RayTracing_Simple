@@ -47,10 +47,19 @@ enum class SupportType {
 	Default
 };
 
-std::unique_ptr<Config> createConfig(int width, int height, SupportType type, bool useGPU, bool useSVM);
+
+enum class MemType {
+	Buffer,
+	SVM,
+	UserProvidedZeroCopy
+};
+
+std::unique_ptr<Config> createConfig(int width, int height, SupportType frameworkType, bool useGPU, MemType memType);
 
 
 SupportType selectType(int id);
+
+
 
 
 #endif
