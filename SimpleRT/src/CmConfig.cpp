@@ -646,13 +646,22 @@ void CmConfigBufferUP::allocateBuffer() {
 
 
 void CmConfigBufferUP::freeBuffer() {
-	// yet to be done
+	// check if all the bufferUPs have been destroied
+
+	pCmDev->DestroyBufferUP(spheresBuffer);
+	pCmDev->DestroyBufferUP(pixelBuffer);
+	pCmDev->DestroyBufferUP(colorBuffer);
+	pCmDev->DestroyBufferUP(seedsBuffer);
+	pCmDev->DestroyBufferUP(cameraBuffer);
 }
 
 
 
 CmConfigBufferUP::~CmConfigBufferUP() {
-	// yet to be done
+
+	// check ... ?
+
+	freeBuffer();
 }
 
 
