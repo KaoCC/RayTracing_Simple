@@ -613,6 +613,33 @@ void CmConfigBufferUP::allocateBuffer() {
 	hostPixels = static_cast<unsigned*>(CM_ALIGNED_MALLOC(sizeof(unsigned) * pixelCount, 0x1000));
 	pCmDev->CreateBufferUP(sizeof(unsigned) * pixelCount, hostPixels, pixelBuffer);		// alignment ?  current setting : 4 * 800 * 600 
 
+	// ------ init part 
+
+	// todo : should be changed to a template function
+
+
+	// seeds
+	for (int i = 0; i < pixelCount * 2; ++i) {
+		//hostSeeds[i] = std::rand();
+
+		// TEST!
+		hostSeeds[i] = std::rand();
+
+		if (hostSeeds[i] < 2)
+			hostSeeds[i] = 2;
+	}
+
+	// color
+	float* tmpColor = (float*)hostColor;
+	for (unsigned i = 0; i < kColorFloatCount * pixelCount; ++i) {
+		tmpColor[i] = 0;
+	}
+
+	// pixel
+	for (int i = 0; i < pixelCount; ++i) {
+		hostPixels[i] = 0;
+	}
+
 
 
 }
