@@ -598,7 +598,7 @@ void CmConfigBufferUP::allocateBuffer() {
 	//hostSeeds = new unsigned[pixelCount * 2];
 
 	hostSeeds = static_cast<unsigned*>(CM_ALIGNED_MALLOC(sizeof(unsigned) * pixelCount * 2, 0x1000));
-	pCmDev->CreateBufferUP(sizeof(unsigned int) * pixelCount * 2, hostSeeds, seedsBuffer);
+	pCmDev->CreateBufferUP(sizeof(unsigned) * pixelCount * 2, hostSeeds, seedsBuffer);
 
 
 	//new float[kColorFloatCount * pixelCount]
