@@ -2,7 +2,7 @@
 
 #include <cstdio>
 #include <cstdlib>
-#include <ctime>
+#include <iostream>
 
 #include "Camera.hpp"
 
@@ -35,15 +35,20 @@ int main(int argc, char *argv[]) {
 			useGPU = (std::atoi(argv[2]) == 1) ? true : false;
 			//useSVM = (std::atoi(argv[3]) == 1) ? true : false;
 
+			std::cerr << "Mem Type: ";
+
 			auto memType = [&]() {
 				switch (std::atoi(argv[3])) {
 				case 0:
+					std::cerr << "Buffer\n";
 					return MemType::Buffer;
 					break;
 				case 1:
+					std::cerr << "Shared Virtual Memory\n";
 					return MemType::SVM;
 					break;
 				case 2:
+					std::cerr << "User Provided Buffer for ZeroCopy\n";
 					return MemType::UserProvidedZeroCopy;
 					break;
 				default:
