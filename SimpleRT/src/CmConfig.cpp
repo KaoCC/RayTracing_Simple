@@ -318,8 +318,8 @@ void CmConfigBuffer::execute() {
 		std::cerr << "Error...: " << status << std::endl;
 	}
 
-
-	pCmEvent->WaitForTaskFinished();
+	unsigned long timeOut = -1;
+	pCmEvent->WaitForTaskFinished(timeOut);
 	//std::cout << "Cm Done!" << std::endl;
 
 	seedsBuffer->ReadSurface(reinterpret_cast<unsigned char*>(hostSeeds), nullptr);
@@ -458,7 +458,8 @@ void CmConfigSVM::execute() {
 		std::cerr << "Error...: " << status << std::endl;
 	}
 
-	pCmEvent->WaitForTaskFinished();
+	unsigned long timeOut = -1;
+	pCmEvent->WaitForTaskFinished(timeOut);
 	//std::cout << "Cm Done!" << std::endl;
 }
 
@@ -580,8 +581,8 @@ void CmConfigBufferUP::execute() {
 		std::cerr << "Error...: " << status << std::endl;
 	}
 
-
-	pCmEvent->WaitForTaskFinished();
+	unsigned long timeOut = -1;
+	pCmEvent->WaitForTaskFinished(timeOut);
 
 }
 
@@ -646,13 +647,22 @@ void CmConfigBufferUP::allocateBuffer() {
 
 
 void CmConfigBufferUP::freeBuffer() {
-	// yet to be done
+	// check if all the bufferUPs have been destroied
+
+	pCmDev->DestroyBufferUP(spheresBuffer);
+	pCmDev->DestroyBufferUP(pixelBuffer);
+	pCmDev->DestroyBufferUP(colorBuffer);
+	pCmDev->DestroyBufferUP(seedsBuffer);
+	pCmDev->DestroyBufferUP(cameraBuffer);
 }
 
 
 
 CmConfigBufferUP::~CmConfigBufferUP() {
-	// yet to be done
+
+	// check ... ?
+
+	freeBuffer();
 }
 
 
