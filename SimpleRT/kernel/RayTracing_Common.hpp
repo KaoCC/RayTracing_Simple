@@ -11,6 +11,7 @@ enum Refl {
 };
 
 // simple impl.
+inline
 float clamp(float x, float low, float high) {
 	if (x < low) {
 		return low;
@@ -55,15 +56,17 @@ using CmSphere = vector<float, kSphereClassFloatcount>;
 using CmSphere_ref = vector_ref<float, kSphereClassFloatcount>;
 
 
-
+inline
 _GENX_ float vecDot(const vector_ref<float, 3> a, const vector_ref<float, 3> b) {
     return a[0] * b[0] + a[1] * b[1] + a[2] * b[2];
 }
 
+inline
 _GENX_ bool vecIsZero(const vector_ref<float, 3> v) {
     return (v[0] == 0) && (v[1] == 0) && (v[2] == 0);
 }
 
+inline
 _GENX_ vector<float, 3> vecCross(const vector_ref<float, 3> a, const vector_ref<float, 3> b) {
     vector<float, 3> ret;
 
@@ -75,6 +78,7 @@ _GENX_ vector<float, 3> vecCross(const vector_ref<float, 3> a, const vector_ref<
 }
 
 
+inline
 _GENX_ void normalize(vector_ref<float, 3> v) {
 
     // dot product
@@ -83,6 +87,7 @@ _GENX_ void normalize(vector_ref<float, 3> v) {
     v = f * v;
 }
 
+inline
 _GENX_ float getRandom(CmSeed_ref seeds) {
 
     unsigned seed0 = seeds[0];
@@ -107,7 +112,7 @@ _GENX_ float getRandom(CmSeed_ref seeds) {
     return (res.f - 2.f) / 2.f;
 }
 
-
+inline
 _GENX_ vector<float, 3> uniformSampleSphere(const float u1, const float u2) {
 
     const float z = 1.f - 2.f * u1;
@@ -127,7 +132,7 @@ _GENX_ vector<float, 3> uniformSampleSphere(const float u1, const float u2) {
     return result;
 }
 
-
+inline
 _GENX_ float sphereIntersect(const CmSphere_ref sphere, const CmRay_ref ray) {
 
 
@@ -159,7 +164,7 @@ _GENX_ float sphereIntersect(const CmSphere_ref sphere, const CmRay_ref ray) {
 
 }
 
-
+inline
 _GENX_ void generateCameraRay(const CmCamrea_ref camera, vector_ref<unsigned, 2> seeds, const int width, const int height, const int x, const int y, CmRay_ref ray) {
 
     //test
