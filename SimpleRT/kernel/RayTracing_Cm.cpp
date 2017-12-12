@@ -59,6 +59,7 @@
 // intersectResult: distance, sphere id
 
 // yet to be checked
+inline
 _GENX_ bool intersect(SurfaceIndex spheresIndex, const unsigned kSphereCount, const CmRay_ref currentRay, vector_ref<float, 2> intersectResult) {
 
     float inf = intersectResult[0] = 1e20f;
@@ -85,7 +86,7 @@ _GENX_ bool intersect(SurfaceIndex spheresIndex, const unsigned kSphereCount, co
     return (intersectResult[0] < inf);
 }
 
-
+inline
 _GENX_ bool intersectP(SurfaceIndex spheresIndex, const unsigned kSphereCount, const CmRay_ref currentRay, const float maVal) {
 
 
@@ -108,7 +109,7 @@ _GENX_ bool intersectP(SurfaceIndex spheresIndex, const unsigned kSphereCount, c
     return false;
 }
 
-
+inline
 _GENX_ void sampleLights(SurfaceIndex spheresIndex, const unsigned kSphereCount, CmSeed_ref seeds,  const vector_ref<float, 3> hitPoint, const vector_ref<float, 3> normal, vector_ref<float, 3> result) {
 
     // clear
@@ -176,6 +177,7 @@ _GENX_ void sampleLights(SurfaceIndex spheresIndex, const unsigned kSphereCount,
 
 
 // single ray version
+inline
 _GENX_ void radiancePathTracing(SurfaceIndex spheresIndex, const unsigned kSphereCount, const CmRay_ref startRay, CmSeed_ref seeds, vector_ref<float, 3> result) {
 
 
