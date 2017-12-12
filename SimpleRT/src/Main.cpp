@@ -4,6 +4,7 @@
 #include <cstdlib>
 #include <ctime>
 
+#include <thread>
 
 #include "SetupGL.hpp"
 
@@ -66,9 +67,23 @@ int main(int argc, char *argv[]) {
 	frameworkConfig->updateCamera();
 
 
+	// Init Compute Thread
+
+	
+	auto computeThread = std::thread([&frameworkConfig]() {
+
+		// check termination flag
+		while (true) {
+			frameworkConfig->updateRendering();
+		}
+	});
+
 	// OpenGL setup
 	InitGlut(argc, argv, "Ray Tracing Demonstration", *frameworkConfig);
     glutMainLoop();
+
+
+	computeThread.join();
 
 
 	return 0;
