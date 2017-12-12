@@ -51,7 +51,7 @@ static void PrintString(void *font, const char *str) {
 
 void idleFunc(void) {
 
-	pConfig->updateRendering();
+	//pConfig->updateRendering();
 
 	glutPostRedisplay();
 }
