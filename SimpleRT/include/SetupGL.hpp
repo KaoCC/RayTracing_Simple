@@ -17,8 +17,8 @@ extern unsigned int renderingFlags;
 
 void InitGlut(int argc, char *argv[], char *windowTittle, Config& config);
 
-void ReadScene(char *);
-void UpdateCamera();
+//void ReadScene(char *);
+//void UpdateCamera();
 
 
 
