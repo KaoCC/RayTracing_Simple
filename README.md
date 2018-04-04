@@ -1,12 +1,16 @@
 # RayTracing_Simple
 
-This is a implementation of the Ray-Tracing algorithm using OpenCL for demonstration purpose.
+This is a implementation of the Ray-Tracing algorithm using OpenCL and Intel C-for-Media for demonstration purpose.
 The code has been kept as simple as possible with minimum dependencies to 3rd party libraries.
 
 ## System requirements and Dependencies
 
 - [OpenCL SDK](https://software.intel.com/en-us/intel-opencl)
 - [freeglut](http://freeglut.sourceforge.net/)
+
+In order to enable the support of the Intel C-for-Media programming model, the following is also required:
+
+- [Intel(R) C-for-Media Compiler](https://github.com/intel/cm-compiler)
 
 ## Build
 
